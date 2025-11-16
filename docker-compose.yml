@@ -1,0 +1,41 @@
+version: '3.0'
+
+services:
+  main_account_think:
+    container_name: main_account_think
+    build:
+      context: .
+    env_file:
+      - .development.env
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - 7070:7070
+      #- 9229:9229
+    #command: npm run start:dev
+    command: >
+      sh -c "NODE_ENV=development npx sequelize-cli db:migrate &&
+             npm run start:dev"
+    depends_on:
+      - postgres
+    restart: always
+
+  postgres:
+   container_name: postgres
+   image: postgres:14
+   #env_file:
+   #  - .production.env
+   environment:
+     #- PG_DATA: /var/lib/postgresql/data
+     - POSTGRES_PASSWORD=RfhbvFkm-Ithba
+     - POSTGRES_USER=accountthink
+     - POSTGRES_DB=accountthink
+   ports:
+     - 5432:5432
+   volumes:
+     - pgdata:/var/lib/postgresql/data
+   restart: always
+
+volumes:
+ pgdata:

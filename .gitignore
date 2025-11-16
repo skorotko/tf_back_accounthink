@@ -1,0 +1,45 @@
+# Файл .gitignore
+
+### Node.js ###
+# Игнорируем главную папку с зависимостями
+node_modules/
+
+# Логи NPM
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Файлы окружения
+# Никогда не добавляйте в Git ваши секреты и пароли!
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Но оставляем шаблоны
+!.env.example
+
+# Файлы сборок
+# Игнорируем папки, куда собирается ваш фронтенд или бэкенд
+dist/
+build/
+.next/
+.nuxt/
+out/
+lib/
+
+# Файлы операционной системы ###
+.DS_Store
+Thumbs.db
+
+# Файлы IDE и редакторов ###
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Локальные логи ###
+logs/
+*.log

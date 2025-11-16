@@ -1,0 +1,16 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "1111",
+    "database": "account-think",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "postgres",
+    "password": "root",
+    "database": "account-think",
+    "host": "postgres",
+    "dialect": "postgres"
+  }
+}
