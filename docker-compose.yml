@@ -12,8 +12,6 @@ services:
       - /app/node_modules
     ports:
       - 7070:7070
-      #- 9229:9229
-    #command: npm run start:dev
     command: >
       sh -c "NODE_ENV=development npx sequelize-cli db:migrate &&
              npm run start:dev"
@@ -22,17 +20,14 @@ services:
     restart: always
 
   postgres:
-   container_name: postgres
+   container_name: postgres_account_think # Лучше дать уникальное имя, чтобы не путать
    image: postgres:14
-   #env_file:
-   #  - .production.env
    environment:
-     #- PG_DATA: /var/lib/postgresql/data
      - POSTGRES_PASSWORD=RfhbvFkm-Ithba
      - POSTGRES_USER=accountthink
      - POSTGRES_DB=accountthink
    ports:
-     - 5432:5432
+     - "5433:5432"  # <--- ИЗМЕНЕНИЕ ЗДЕСЬ: Внешний порт 5433
    volumes:
      - pgdata:/var/lib/postgresql/data
    restart: always
