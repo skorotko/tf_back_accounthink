@@ -44,7 +44,7 @@
 //     $BODY$;
     
 //     ALTER FUNCTION public.get_currentearnings(date, date)
-//     OWNER TO accountthink;`)
+//     OWNER TO CURRENT_USER;`)
 //   },
 
 //   down: async (queryInterface, Sequelize) => {
@@ -98,7 +98,7 @@ module.exports = {
         END;
         $BODY$;
         ALTER FUNCTION public.get_grossearnings(integer, date, date)
-        OWNER TO accountthink;`
+        OWNER TO CURRENT_USER;`
       );
 
       await queryInterface.sequelize.query(
@@ -141,7 +141,7 @@ module.exports = {
         END;
         $BODY$;
         ALTER FUNCTION public.get_netoperatingtearnings(integer, date, date)
-        OWNER TO accountthink;`
+        OWNER TO CURRENT_USER;`
       );
 
       await queryInterface.sequelize.query(
