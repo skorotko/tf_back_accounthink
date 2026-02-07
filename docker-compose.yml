@@ -13,7 +13,7 @@ services:
     ports:
       - "7070:7070"
     command: >
-      sh -c "NODE_ENV=development npx sequelize-cli db:migrate &&
+      sh -c "NODE_ENV=development npx sequelize-cli db:migrate --config config/config.js &&
              npm run start:dev"
     depends_on:
       - postgres
