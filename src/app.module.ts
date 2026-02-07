@@ -105,7 +105,7 @@ import { ExpenseCategoryModule } from './expense-category/expense-category.modul
   imports: [
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({
-      envFilePath: `.${process.env.NODE_ENV}.env`,
+      envFilePath: `.env`,
     }),
 
     SequelizeModule.forRoot({
