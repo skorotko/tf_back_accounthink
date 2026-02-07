@@ -110,11 +110,11 @@ import { ExpenseCategoryModule } from './expense-category/expense-category.modul
 
     SequelizeModule.forRoot({
       dialect: 'postgres',
-      host: process.env.POSTGRES_HOST || 'localhost',
-      port: Number(process.env.POSTGRES_PORT) || 5432,
-      username: process.env.POSTGRES_USER || 'postgres12',
-      password: process.env.POSTGRES_PASSWORD || '1111',
-      database: process.env.POSTGRES_DB || 'account-think',
+      host: process.env.DB_HOST || 'localhost',
+      port: Number(process.env.DB_PORT) || 5432,
+      username: process.env.DB_USER || 'postgres12',
+      password: process.env.DB_PASSWORD || '1111',
+      database: process.env.DB_NAME || 'account-think',
       logging: false,
       models: [
         Types,
