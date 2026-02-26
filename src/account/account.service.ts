@@ -85,7 +85,10 @@ export class AccountService {
           where: { accountId: parentId },
         });
         let parentAccount = await this.getById(dto.parentId);
-        if (transaction) return parentAccount;
+        if (transaction){
+          parentAccount.id = null
+          return parentAccount;
+        } 
         parentCodes = {
           code: parentAccount.code,
           DRCRCode: parentAccount.DRCRCode,
@@ -1323,9 +1326,6 @@ export class AccountService {
   async getAccountLedgerItem(params) {
     try {
       let result = await this.getAccountLedger(params);
-      // let account = await this.getById(params.accountId);
-      // let item = result[0].map;
-      // item.
       return {
         item: result[0],
       };
@@ -1333,230 +1333,6 @@ export class AccountService {
       throw new HttpException(`Error: ${e}`, 500);
     }
   }
-
-  // async getSubsidiaryLedger(companyId, accountId, startDate, endDate) {
-  //   try {
-  //     let result = await this.accountRepository.sequelize.query(`                             --get client transactions--
-
-  //         SELECT
-  //         gld.id as clientid,0 as vendorid, 0 as employeeid, gld."transactionDate", gld."transactionNo", gld."transactionType", gld."transactionDescription",gld."createdBy",
-  //         sum(gld.debit) as debit,
-  //         sum(gld.credit) as credit,
-  //         (case when gld."ADRCRCode"='DR' then (sum((0+sum(gld.debit)-sum(gld.credit))) over (partition by gld.id order by gld.tid)) else (sum((0-sum(gld.debit)+sum(gld.credit))) over (partition by gld.id  order by gld.tid)) end) as endingbalance
-  //         ,gld.tid as transactionid
-  //   FROM (
-  //         SELECT
-  //         beg.id,0 as tid,
-  //         NULL as "transactionDate",NULL as "transactionNo",NULL as "transactionType",'BeginningBalance' as "transactionDescription",NULL as "createdBy",
-  //         beg."ADRCRCode",
-  //         sum(beg.debit) as debit,
-  //         sum(beg.credit) as credit
-  //         FROM (
-  //         SELECT
-  //         te."clientId" as ID,
-  //         '' AS NAME, 'CLIENT' AS TYPE,te."DRCRCode",a."DRCRCode" as "ADRCRCode",
-  //         (case when te."DRCRCode" = 'DR' then sum(te.amount) else 0 end) as debit,
-  //         (case when te."DRCRCode" = 'CR' then sum(te.amount) else 0 end) as credit
-  //         FROM transaction t
-  //         inner join "transactionEntry" te on te."transactionId"=t.id and te."companyId"=t."companyId"
-  //         inner join accounts a on a.id=te."accountId" and a."companyId"=te."companyId"
-  //         where t."companyId"=${companyId} and te."accountId"=${accountId}
-  //         and te."clientId" is not null and te."vendorId" IS NULL --and te."isAllocated"='ALLOCATED'
-  //         and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) < cast('${startDate}' as date)
-  //         group by te."clientId",te."DRCRCode",a."DRCRCode"
-  //         ) as beg
-  //         group by beg.id,beg."ADRCRCode"
-
-  //         UNION ALL
-
-  //         SELECT
-  //         te."clientId" as ID,
-  //         t.id as tid, to_char(t."transactionDate", 'mm/dd/yyyy') as "transactionDate" , t."transactionNo", t."transactionType", t."transactionDescription",t."createdBy",
-  //         a."DRCRCode" as "ADRCRCode",
-  //         (case when te."DRCRCode" = 'DR' then sum(te.amount) else 0 end) as debit,
-  //         (case when te."DRCRCode" = 'CR' then sum(te.amount) else 0 end) as credit
-  //         FROM transaction t
-  //         inner join "transactionEntry" te on te."transactionId"=t.id and te."companyId"=t."companyId"
-  //         inner join accounts a on a.id=te."accountId" and a."companyId"=te."companyId"
-  //         where t."companyId"=${companyId} and te."accountId"=${accountId}
-  //         and te."clientId" is not null and te."vendorId" IS NULL --and te."isAllocated"='ALLOCATED'
-  //         and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${startDate}' as date)
-  //         and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
-  //         group by te."clientId",t.id,te."DRCRCode",a."DRCRCode"
-  //         ) as gld
-  //         group by gld.id,gld.tid, gld."transactionDate", gld."transactionNo", gld."transactionType", gld."transactionDescription",gld."createdBy",gld."ADRCRCode"
-
-  //         --get client transactions--
-
-  //         UNION ALL
-
-  //         --get vendor transactions--
-
-  //         SELECT
-  //         0 as clientid, gld.id as vendorid, 0 as employeeid,gld."transactionDate", gld."transactionNo", gld."transactionType", gld."transactionDescription",gld."createdBy",
-  //         sum(gld.debit) as debit,
-  //         sum(gld.credit) as credit,
-  //         (case when gld."ADRCRCode"='DR' then (sum((0+sum(gld.debit)-sum(gld.credit))) over (partition by gld.id order by gld.tid)) else (sum((0-sum(gld.debit)+sum(gld.credit))) over (partition by gld.id  order by gld.tid)) end) as endingbalance
-  //         ,gld.tid as transactionid
-  //         FROM (
-  //         SELECT
-  //         beg.id,0 as tid,
-  //         NULL as "transactionDate",NULL as "transactionNo",NULL as "transactionType",'BeginningBalance' as "transactionDescription",NULL as "createdBy",
-  //         beg."ADRCRCode",
-  //         sum(beg.debit) as debit,
-  //         sum(beg.credit) as credit
-  //         FROM (
-  //         SELECT
-  //         te."vendorId" as ID,'' AS NAME, 'VENDOR' AS TYPE,te."DRCRCode",a."DRCRCode" as "ADRCRCode",
-  //         (case when te."DRCRCode" = 'DR' then sum(te.amount) else 0 end) as debit,
-  //         (case when te."DRCRCode" = 'CR' then sum(te.amount) else 0 end) as credit
-  //         FROM transaction t
-  //         inner join "transactionEntry" te on te."transactionId"=t.id and te."companyId"=t."companyId"
-  //   inner join accounts a on a.id=te."accountId" and a."companyId"=te."companyId"
-  //         where t."companyId"=${companyId} and te."accountId"=${accountId}
-  //         and te."clientId" IS NULL and te."vendorId" is not null
-  //         --and te."employeeId" IS NULL
-  //         --and te."isAllocated"='ALLOCATED'
-  //         and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) < cast('${startDate}' as date)
-  //         group by te."vendorId",te."DRCRCode",a."DRCRCode"
-  //         ) as beg
-  //         group by beg.id,beg."ADRCRCode"
-
-  //         UNION ALL
-
-  //         SELECT
-  //         te."vendorId" as ID,
-  //         t.id as tid, to_char(t."transactionDate", 'mm/dd/yyyy') as "transactionDate" , t."transactionNo", t."transactionType", t."transactionDescription",t."createdBy",
-  //         a."DRCRCode" as "ADRCRCode",
-  //   (case when te."DRCRCode" = 'DR' then sum(te.amount) else 0 end) as debit,
-  //         (case when te."DRCRCode" = 'CR' then sum(te.amount) else 0 end) as credit
-  //         FROM transaction t
-  //         inner join "transactionEntry" te on te."transactionId"=t.id and te."companyId"=t."companyId"
-  //   inner join accounts a on a.id=te."accountId" and a."companyId"=te."companyId"
-  //         where t."companyId"=${companyId} and te."accountId"=${accountId}
-  //         and te."clientId" IS NULL and te."vendorId" is not null
-  //         --and te."employeeId" IS NULL
-  //         --and te."isAllocated"='ALLOCATED'
-  //         and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${startDate}' as date)
-  //         and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
-  //         group by te."vendorId",t.id,te."DRCRCode",a."DRCRCode"
-  //         ) as gld
-  //         group by gld.id,gld.tid, gld."transactionDate", gld."transactionNo", gld."transactionType", gld."transactionDescription",gld."createdBy",gld."ADRCRCode"
-
-  //         --get vendor transactions--
-
-  //         UNION ALL
-
-  //         --get employee transactions--
-
-  //         SELECT
-  //         0 as clientid, 0 as vendorid, gld.id as employeeid,gld."transactionDate", gld."transactionNo", gld."transactionType", gld."transactionDescription",gld."createdBy",
-  //         sum(gld.debit) as debit,
-  //         sum(gld.credit) as credit,
-  //         (case when gld."ADRCRCode"='DR' then (sum((0+sum(gld.debit)-sum(gld.credit))) over (partition by gld.id order by gld.tid)) else (sum((0-sum(gld.debit)+sum(gld.credit))) over (partition by gld.id  order by gld.tid)) end) as endingbalance
-  //         ,gld.tid as transactionid
-  //         FROM (
-  //         SELECT
-  //         beg.id,0 as tid,
-  //         NULL as "transactionDate",NULL as "transactionNo",NULL as "transactionType",'BeginningBalance' as "transactionDescription",NULL as "createdBy",
-  //   beg."ADRCRCode",
-  //         sum(beg.debit) as debit,
-  //         sum(beg.credit) as credit
-  //         FROM (
-  //         SELECT
-  //         te."employeeId" as ID,'' AS NAME, 'EMPLOYEE' AS TYPE,te."DRCRCode",a."DRCRCode" as "ADRCRCode",
-  //         (case when te."DRCRCode" = 'DR' then sum(te.amount) else 0 end) as debit,
-  //         (case when te."DRCRCode" = 'CR' then sum(te.amount) else 0 end) as credit
-  //         FROM transaction t
-  //         inner join "transactionEntry" te on te."transactionId"=t.id and te."companyId"=t."companyId"
-  //   inner join accounts a on a.id=te."accountId" and a."companyId"=te."companyId"
-  //         where t."companyId"=${companyId} and te."accountId"=${accountId}
-  //         --and te."clientId" IS NULL and te."vendorId" IS NULL
-  //         and te."employeeId" is not null --and te."isAllocated"='ALLOCATED'
-  //         and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) < cast('${startDate}' as date)
-  //         group by te."employeeId",te."DRCRCode",a."DRCRCode"
-  //         ) as beg
-  //         group by beg.id,beg."ADRCRCode"
-
-  //         UNION ALL
-
-  //         SELECT
-  //         te."employeeId" as ID,
-  //         t.id as tid, to_char(t."transactionDate", 'mm/dd/yyyy') as "transactionDate" , t."transactionNo", t."transactionType", t."transactionDescription",t."createdBy",
-  //         a."DRCRCode" as "ADRCRCode",
-  //   (case when te."DRCRCode" = 'DR' then sum(te.amount) else 0 end) as debit,
-  //         (case when te."DRCRCode" = 'CR' then sum(te.amount) else 0 end) as credit
-  //         FROM transaction t
-  //         inner join "transactionEntry" te on te."transactionId"=t.id and te."companyId"=t."companyId"
-  //   inner join accounts a on a.id=te."accountId" and a."companyId"=te."companyId"
-  //         where t."companyId"=${companyId} and te."accountId"=${accountId}
-  //         --and te."clientId" IS NULL and te."vendorId" IS NULL
-  //         and te."employeeId" is not null --and te."isAllocated"='ALLOCATED'
-  //         and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${startDate}' as date)
-  //         and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
-  //         group by te."employeeId",t.id,te."DRCRCode",a."DRCRCode"
-  //         ) as gld
-  //         group by gld.id,gld.tid, gld."transactionDate", gld."transactionNo", gld."transactionType", gld."transactionDescription",gld."createdBy",gld."ADRCRCode"
-
-  //         --get employee transactions--
-
-  // 	  UNION ALL
-
-  // 	  --get unallocated transactions--
-  // 	  SELECT
-  //         0 as clientid,0 as vendorid, 0 as employeeid, gld."transactionDate", gld."transactionNo", gld."transactionType", gld."transactionDescription",gld."createdBy",
-  //         --gld."ADRCRCode",
-  // 	  sum(gld.debit) as debit,
-  //         sum(gld.credit) as credit,
-  //         (case when gld."ADRCRCode"='DR' then (sum((0+sum(gld.debit)-sum(gld.credit))) over (partition by gld.id order by gld.tid)) else (sum((0-sum(gld.debit)+sum(gld.credit))) over (partition by gld.id order by gld.tid)) end) as endingbalance
-  //         ,gld.tid as transactionid
-  // 	  FROM (
-  //         SELECT
-  //         beg.id,0 as tid,
-  //         NULL as "transactionDate",NULL as "transactionNo",NULL as "transactionType",'BeginningBalance' as "transactionDescription",NULL as "createdBy",
-  //         beg."ADRCRCode",
-  // 	  sum(beg.debit) as debit,
-  //         sum(beg.credit) as credit
-  //         FROM (
-  //         SELECT
-  //         te."clientId" as ID,
-  //         '' AS NAME, 'CLIENT' AS TYPE,te."DRCRCode",a."DRCRCode" as "ADRCRCode",
-  //         (case when te."DRCRCode" = 'DR' then sum(te.amount) else 0 end) as debit,
-  //         (case when te."DRCRCode" = 'CR' then sum(te.amount) else 0 end) as credit
-  //         FROM transaction t
-  //         inner join "transactionEntry" te on te."transactionId"=t.id and te."companyId"=t."companyId"
-  //       inner join accounts a on a.id=te."accountId" and a."companyId"=te."companyId"
-  //        where t."companyId"=${companyId} and te."accountId"=${accountId}
-  //         and te."clientId" is null and te."vendorId" IS NULL and te."employeeId" is null--and te."isAllocated"='ALLOCATED'
-  //         and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) < cast('${startDate}' as date)
-  //         group by te."clientId",te."DRCRCode",a."DRCRCode"
-  //         ) as beg
-  //         group by beg.id,beg."ADRCRCode"
-
-  //         UNION ALL
-
-  //         SELECT
-  //         te."clientId" as ID,
-  //         t.id as tid, to_char(t."transactionDate", 'mm/dd/yyyy') as "transactionDate" , t."transactionNo", t."transactionType", t."transactionDescription",t."createdBy",
-  //         a."DRCRCode" as "ADRCRCode",
-  //       (case when te."DRCRCode" = 'DR' then sum(te.amount) else 0 end) as debit,
-  //         (case when te."DRCRCode" = 'CR' then sum(te.amount) else 0 end) as credit
-  //         FROM transaction t
-  //         inner join "transactionEntry" te on te."transactionId"=t.id and te."companyId"=t."companyId"
-  //       inner join accounts a on a.id=te."accountId" and a."companyId"=te."companyId"
-  //         where t."companyId"=${companyId} and te."accountId"=${accountId}
-  //         and te."clientId" is null and te."vendorId" IS NULL and te."employeeId" is null --and te."isAllocated"='ALLOCATED'
-  //         and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${startDate}' as date)
-  //         and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
-  //         group by te."clientId",t.id,te."DRCRCode",a."DRCRCode"
-  //         ) as gld
-  //         group by gld.id,gld.tid, gld."transactionDate", gld."transactionNo", gld."transactionType", gld."transactionDescription",gld."createdBy",gld."ADRCRCode"
-  //         --get unalloacted transactions--`);
-  //     return result[0]
-  //   } catch (e) {
-  //     throw new HttpException(`Error: ${e}`, 500)
-  //   }
-  // }
 
   async getSubsidiaryLedger(companyId, accountId, startDate, endDate) {
     try {
@@ -2817,35 +2593,6 @@ export class AccountService {
     }
   }
 
-  // async getCompanyIncomeStatement (params) {
-  //   try {
-  //     let result: any = await this.accountRepository.sequelize.query(`select
-  //       bs."sortOrder", bs.type, bs.class, bs.group, bs.account,
-  //       sum((case when bs."DRCRCode"='DR' then (bs.debit-bs.credit)*-1 else bs.credit-bs.debit end)) AS Amount
-  //       from
-  //       (
-  //       select
-  //       ty."sortOrder",ty.name as type,cl.name as class,gp.name as group,ac.name as account,ac."DRCRCode",
-  //       (case when te."DRCRCode" = 'DR' then sum(te.amount/100) else 0 end) as debit,
-  //       (case when te."DRCRCode" = 'CR' then sum(te.amount/100) else 0 end) as credit
-  //       from types ty
-  //       inner join classes cl on cl."typeId"=ty.id
-  //       inner join groups gp on gp."classId"=cl.id and cl."companyId"=gp."companyId"
-  //       inner join accounts ac on ac."groupId"=gp.id and gp."companyId"=ac."companyId"
-  //       inner join "transactionEntry" te on te."accountId"=ac.id and te."companyId"=ac."companyId"
-  //       inner join transaction t on t.id=te."transactionId" and t."companyId"=te."companyId"
-  //       where t."companyId"=${params.companyId} and ty."finDocName"='INCOME STATEMENT'and t."transactionDate" BETWEEN '${params.startDate}' AND '${params.endDate}'
-  //       group by ty."sortOrder",ty.name,cl.name,gp.name,ac.name,ac."DRCRCode",te."DRCRCode") as bs
-  //       group by bs."sortOrder", bs.type, bs.class, bs.group, bs.account
-  //       UNION ALL
-  //       select 6,'','','','NET CURRENT EARNINGS',public.get_currentearnings('${params.startDate}','${params.endDate}')`);
-  //     return result[0]
-  //   } catch (e) {
-  //     console.log(e);
-  //     return e
-  //   }
-  // }
-
   async getCompanyIncomeStatement(params) {
     try {
       let result: any;
@@ -3262,42 +3009,6 @@ export class AccountService {
     }
   }
 
-  // async getCompanyBalanceSheet(params) {
-  //   try {
-  //     let result: any = await this.accountRepository.sequelize.query(`select
-  //       bs."sortOrder", bs.type, bs.class, bs.group, bs.account,
-  //       sum((case when bs."DRCRCode"='DR' then bs.debit-bs.credit else 0 end)) AS debit,
-  //       sum((case when bs."DRCRCode"='CR' then bs.credit-bs.debit else 0 end)) AS credit
-  //       from
-  //       (
-  //       select
-  //       ty."sortOrder",ty.name as type,cl.name as class,gp.name as group,ac.name as account,ac."DRCRCode",
-  //       (case when te."DRCRCode" = 'DR' then sum(te.amount/100) else 0 end) as debit,
-  //       (case when te."DRCRCode" = 'CR' then sum(te.amount/100) else 0 end) as credit
-  //       from types ty
-  //       inner join classes cl on cl."typeId"=ty.id
-  //       inner join groups gp on gp."classId"=cl.id and cl."companyId"=gp."companyId"
-  //       inner join accounts ac on ac."groupId"=gp.id and gp."companyId"=ac."companyId"
-  //       inner join "transactionEntry" te on te."accountId"=ac.id and te."companyId"=ac."companyId"
-  //       inner join transaction t on t.id=te."transactionId" and t."companyId"=te."companyId"
-  //       where t."companyId"=${params.companyId} and ty."finDocName"='BALANCE SHEET'and t."transactionDate" <= '${params.endDate}'
-  //       group by ty."sortOrder",ty.name,cl.name,gp.name,ac.name,ac."DRCRCode",te."DRCRCode") as bs
-  //       group by bs."sortOrder", bs.type, bs.class, bs.group, bs.account
-  //       UNION ALL
-  //       select 3,'EQUITY','RETAINED EARNINGS','RETAINED EARNINGS','Retained Earnings',
-  //       (case when public.get_retainedearnings('${params.startDate}')<0 then public.get_retainedearnings('${params.startDate}')*-1 else 0 end),
-  //       (case when public.get_retainedearnings('${params.startDate}')>0 then public.get_retainedearnings('${params.startDate}') else 0 end)
-  //       UNION ALL
-  //       select 3,'EQUITY','RETAINED EARNINGS','RETAINED EARNINGS','Net Current Earnings',
-  //       (case when public.get_currentearnings('${params.startDate}','${params.endDate}')<0 then public.get_currentearnings('${params.startDate}','${params.endDate}')*-1 else 0 end),
-  //       (case when public.get_currentearnings('${params.startDate}','${params.endDate}')>0 then public.get_currentearnings('${params.startDate}','${params.endDate}') else 0 end)`);
-  //     return result[0]
-  //   } catch (e) {
-  //     console.log(e);
-  //     return e
-  //   }
-  // }
-
   async getCompanyBalanceSheet(params) {
     try {
       let result: any = await this.accountRepository.sequelize.query(`select
@@ -3504,58 +3215,6 @@ export class AccountService {
       return e;
     }
   }
-
-  // async getCompanyTrialBalance(params) {
-  //   try {
-  //     let result: any = await this.accountRepository.sequelize.query(`select
-  //       bs."sortOrder", bs.type, bs.class, bs.group, bs.account,
-  //       sum((case when bs."DRCRCode"='DR' then bs.debit-bs.credit else 0 end)) AS debit,
-  //       sum((case when bs."DRCRCode"='CR' then bs.credit-bs.debit else 0 end)) AS credit
-  //       from
-  //       (
-  //       select
-  //       ty."sortOrder",ty.name as type,cl.name as class,gp.name as group,ac.name as account,ac."DRCRCode",
-  //       (case when te."DRCRCode" = 'DR' then sum(te.amount/100) else 0 end) as debit,
-  //       (case when te."DRCRCode" = 'CR' then sum(te.amount/100) else 0 end) as credit
-  //       from types ty
-  //       inner join classes cl on cl."typeId"=ty.id
-  //       inner join groups gp on gp."classId"=cl.id and cl."companyId"=gp."companyId"
-  //       inner join accounts ac on ac."groupId"=gp.id and gp."companyId"=ac."companyId"
-  //       inner join "transactionEntry" te on te."accountId"=ac.id and te."companyId"=ac."companyId"
-  //       inner join transaction t on t.id=te."transactionId" and t."companyId"=te."companyId"
-  //       where t."companyId"=${params.companyId} and ty."finDocName"='BALANCE SHEET'and t."transactionDate" <= '${params.endDate}'
-  //       group by ty."sortOrder",ty.name,cl.name,gp.name,ac.name,ac."DRCRCode",te."DRCRCode") as bs
-  //       group by bs."sortOrder", bs.type, bs.class, bs.group, bs.account
-  //       UNION ALL
-  //       select 3,'EQUITY','RETAINED EARNINGS','RETAINED EARNINGS','Retained Earnings',
-  //       (case when public.get_retainedearnings('${params.startDate}')<0 then public.get_retainedearnings('${params.startDate}')*-1 else 0 end),
-  //       (case when public.get_retainedearnings('${params.startDate}')>0 then public.get_retainedearnings('${params.startDate}') else 0 end)
-  //       UNION ALL
-  //       select
-  //       bs."sortOrder", bs.type, bs.class, bs.group, bs.account,
-  //       sum((case when bs."DRCRCode"='DR' then bs.debit-bs.credit else 0 end)) AS debit,
-  //       sum((case when bs."DRCRCode"='CR' then bs.credit-bs.debit else 0 end)) AS credit
-  //       from
-  //       (
-  //       select
-  //       ty."sortOrder",ty.name as type,cl.name as class,gp.name as group,ac.name as account,ac."DRCRCode",
-  //       (case when te."DRCRCode" = 'DR' then sum(te.amount/100) else 0 end) as debit,
-  //       (case when te."DRCRCode" = 'CR' then sum(te.amount/100) else 0 end) as credit
-  //       from types ty
-  //       inner join classes cl on cl."typeId"=ty.id
-  //       inner join groups gp on gp."classId"=cl.id and cl."companyId"=gp."companyId"
-  //       inner join accounts ac on ac."groupId"=gp.id and gp."companyId"=ac."companyId"
-  //       inner join "transactionEntry" te on te."accountId"=ac.id and te."companyId"=ac."companyId"
-  //       inner join transaction t on t.id=te."transactionId" and t."companyId"=te."companyId"
-  //       where t."companyId"=${params.companyId} and ty."finDocName"='INCOME STATEMENT' and t."transactionDate" between '${params.startDate}' and '${params.endDate}'
-  //       group by ty."sortOrder",ty.name,cl.name,gp.name,ac.name,ac."DRCRCode",te."DRCRCode") as bs
-  //       group by bs."sortOrder", bs.type, bs.class, bs.group, bs.account`);
-  //     return result[0]
-  //   } catch (e) {
-  //     console.log(e);
-  //     return e
-  //   }
-  // }
 
   async getCompanyTrialBalance(params) {
     try {
@@ -3766,10 +3425,6 @@ export class AccountService {
       let conditions = `t."companyId"=${companyId}`;
       if (filter !== null) {
         switch (filter.filterBy) {
-          // case 'tax': {
-          //   conditions = conditions + ` and tr."taxTypeId"=${filter.taxTypeId} and a."assignToTaxAccountId"=${filter.taxId}`;
-          //   break
-          // }
           case 'account': {
             conditions = conditions + ` and ac."id"=${filter.accountId}`;
             break;
@@ -3778,30 +3433,8 @@ export class AccountService {
             conditions =
               conditions +
               ` and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${filter.startDate}' as date) and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${filter.endDate}' as date)`;
-            //conditions = conditions + ` and tr."transactionDate" between '${filter.startDate}' and '${filter.endDate}'`;
             break;
           }
-          // case 'search': {
-          //   switch (filter.searchType) {
-          //     case 'less': {
-          //       conditions = conditions + ` and t.amount<${filter.amount}`;
-          //       break
-          //     }
-          //     case 'more': {
-          //       conditions = conditions + ` and t.amount>${filter.amount}`;
-          //       break
-          //     }
-          //     case 'equal': {
-          //       conditions = conditions + ` and t.amount=${filter.amount}`;
-          //       break
-          //     }
-          //     case 'between': {
-          //       conditions = conditions + ` and t.amount between ${filter.fromAmount} and ${filter.beforeAmount}`;
-          //       break
-          //     }
-          //   }
-          //   break
-          // }
         }
       }
       let newArray = [];
@@ -4704,45 +4337,6 @@ export class AccountService {
     }
   }
 
-  // async getCreditableVatWithheldSubAccounts(params: GetTaxAccountsWithEndDateDto) {
-  //   const creditableVatWithheldSubAccounts = await this.accountRepository.sequelize.query(`
-  //     select
-  //     ac.id as accountid, ac.code as dbcode, ac.number as accountno, ac.name as accountname, ac."taxId",
-  //     (case when ty."finDocName"='BALANCE SHEET' THEN 'BS' ELSE (CASE WHEN ty."finDocName"='INCOME STATEMENT' THEN 'IS' ELSE '' END ) END) as report,
-  //     gld1.debit, gld1.credit, gld1.endingbalance,ac."DRCRCode" as setas
-  //     from types ty
-  //     inner join classes cl on cl."typeId"=ty.id
-  //     inner join groups gp on gp."classId"=cl.id and cl."companyId"=gp."companyId"
-  //     inner join accounts ac on ac."groupId"=gp.id and gp."companyId"=ac."companyId"
-  //     left outer join
-  //     (
-  //     select
-  //     gld.accountid,gld.dbcode,gld.accountno,gld.accountname,
-  //     sum(gld.debit) as debit, sum(gld.credit) as credit,
-  //     (case when gld."ADRCRCode"='DR' then sum(gld.debit)-sum(gld.credit) else sum(gld.credit)-sum(gld.debit) end) as endingbalance
-  //     from (
-  //     SELECT
-  //     ac.id as accountid,
-  //     ac.code as dbcode,
-  //     ac.number as accountno,
-  //     ac.name as accountname,
-  //     ac."DRCRCode" as "ADRCRCode",
-  //     (case when te."DRCRCode" = 'DR' then sum(te.amount) else 0 end) as debit,
-  //     (case when te."DRCRCode" = 'CR' then sum(te.amount) else 0 end) as credit
-  //     from accounts ac
-  //     inner join "transactionEntry" te on te."accountId"=ac.id and te."companyId"=ac."companyId"
-  //     inner join transaction t on t.id=te."transactionId" and t."companyId"=te."companyId"
-  //     where t."companyId"=${params.companyId} and ac."accountTypeId"=16
-  //     and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${params.endDate}' as date)
-  //     group by ac.id,ac.code, ac.number,ac.name,te."DRCRCode",ac."DRCRCode") as gld
-  //     group by gld.accountid,gld.dbcode,gld.accountno,gld.accountname,gld."ADRCRCode"
-  //     ) as gld1 on gld1.accountid=ac.id
-  //     where ac."companyId"=${params.companyId} and ac."accountTypeId"=16 and ac."parentId" is not null
-  //     ORDER BY string_to_array(ac.code, '.', '')::int[];
-  //     `);
-  //   return creditableVatWithheldSubAccounts[0]
-  // }
-
   async getWithHoldingTaxExpandedSubAccountsEndingBalances(
     params: GetTaxAccountsWithEndDateDto,
   ) {
@@ -5322,86 +4916,6 @@ export class AccountService {
     }
   }
 
-  // async getTaxAccountResultClients(params: GetTaxAccountsWithEndDateDto) {
-  //   try {
-  //     const result = await this.accountRepository.sequelize.query(`select
-  //       cl1.clientId,cl1.TIN, cl1.endingbalance, cl1.Date, cl1.ID, cl1.EntryType, cl1.Description, cl1.CreatedBy,
-  //       sum(cl1.GrossAmount) as GrossAmount, sum(cl1.TaxAmount) as TaxAmount,
-  //       cl1.taxcode,cl1.viewTaxcode, cl1."sourceReference", cl1.clientStatus,
-  //       cl1.report, cl1.reported,
-  //       cl1."transactionid"
-  //       from
-  //       (
-  //       SELECT
-  //       cl.clientId, cl.TIN, cl.endingbalance, cl.Date, cl.ID, cl.EntryType, cl.Description, cl.CreatedBy,
-  //       (case when cl.GrossAmount=0 then 0 else (case when cl."taxAssignAccountId"=30 then (cl.GrossAmount*-1) else cl.GrossAmount end) end) as GrossAmount,
-  //       (case when cl.TaxAmount=0 then 0 else (case when cl."taxAssignAccountId"=30 then (cl.TaxAmount*-1) else cl.TaxAmount end) end) as TaxAmount,
-  //       --cl.GrossAmount,
-  //       --cl.TaxAmount,
-  //       cl.taxcode,cl.viewTaxcode, cl."sourceReference", cl.clientStatus,
-  //       cl.report, cl.reported, cl.tid as "transactionid"--, cl.teid,cl."taxAssignAccountId"
-  //       FROM
-  //       (
-  //       select
-  //       te."clientId" as clientId,
-  //       '' as TIN,
-  //       0 as EndingBalance,
-  //       to_char(t."transactionDate", 'mm/dd/yyyy') as Date,
-  //       --to_char(t."transactionDate", 'dd Mon YYYY') as Date,
-  //       t."transactionNo" as ID,
-  //       t."transactionType" as EntryType,
-  //       t."transactionDescription" as Description,
-  //       t."createdBy" as CreatedBy,
-  //       t.id as tid,
-  //       --te."accountId",
-  //       --(select "taxAssignAccountId" from "transactionEntry" where "transactionId"=t.id and "accountId"=te."accountId") as "taxAssignAccountId",
-  //       --(select amount from "transactionEntry" where "accountId"=cast((select "taxAssignAccountId" from "transactionEntry" where "transactionId"=t.id and "accountId"=te."accountId") as int) and "transactionId"=t.id) as GrossAmount,
-
-  //       (case when
-  //       (select amount from "transactionEntry" where "transactionId"=t.id and "trAccountCode"=te."trTaxCode") is null
-  //       then
-  //       (te.amount/
-  //       ((select tr.rate from "saleTax" st inner join "taxRate" tr on tr."saleTaxId"=st.id where st.id=ac."taxId")/100.00))
-  //       else
-  //       (select amount from "transactionEntry" where "transactionId"=t.id and "trAccountCode"=te."trTaxCode")
-  //       end) as GrossAmount,
-
-  //       te.amount as TaxAmount,
-  //       (select code from "saleTax" where id=ac."taxId") as taxcode,
-  //       (select "viewCode" from "saleTax" where id=ac."taxId") as viewTaxcode,
-  //       (case when t."sourceReference" is null then 'False' else 'True' end) as "sourceReference",
-
-  //       (case when t."isPosted"='true' then 'Added' else
-  //       (case when t."checkedBy" is not null then 'Checked' else
-  //       (case when t."isSendToAcc"='true' then 'Send to Accountant' else
-  //       (case when t."recorderBy" is not null then 'Recorded' else '' end)end)end)end) as clientStatus,
-
-  //       (case when te."VatRCheked" is null then 'False' else te."VatRCheked" end) as report,
-  //       (case when te."VatRCleared" is null then 'False' else te."VatRCleared" end) as reported,
-
-  //       (select "accountTypeId" from accounts where id=(select "accountId" from "transactionEntry" where "transactionId"=t.id and "trAccountCode"=te."trTaxCode"))
-
-  //       as "taxAssignAccountId",
-  //       te.id as teid
-  //       FROM transaction t
-  //       inner join "transactionEntry" te on te."transactionId"=t.id and te."companyId"=t."companyId"
-  //       inner join accounts ac on ac.id=te."accountId" and ac."companyId"=te."companyId"
-  //       where t."companyId"=${params.companyId}
-  //       and te."clientId" is not NULL
-  //       and te."vendorId" IS NULL and te."employeeId" IS NULL and te."isAllocated"='ALLOCATED'
-  //       and t."isPosted"='true' and t."isVoid"='false' and t."isDeleted"='false'
-  //       and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${params.endDate}' as date)
-  //       and ac."accountTypeId"=11) AS cl
-  //       order by cl.clientId, cl.tid, cl.teid-- cl."taxAssignAccountId"
-  //       ) as cl1
-  //       group by cl1.clientId, cl1."transactionid",cl1.TIN, cl1.endingbalance, cl1.Date, cl1.ID, cl1.EntryType, cl1.Description, cl1.CreatedBy,
-  //       cl1.taxcode,cl1.viewTaxcode, cl1."sourceReference", cl1.clientStatus, cl1.report, cl1.reported`);
-  //     return result[0];
-  //   } catch (e) {
-  //     throw new HttpException(`Error: ${e}`, 500)
-  //   }
-  // }
-
   async getWtaxExpandedAccountsResultVendors(
     params: GetTaxAccountsWithEndDateDto,
   ) {
@@ -5623,66 +5137,6 @@ ORDER BY cl.clientId, cl.tid, cl.taxcode, cl.teid`);
       throw new HttpException(`Error: ${e}`, 500);
     }
   }
-
-  // async getCreditableVATSummary(params: GetTaxAccountsWithEndDateDto) {
-  //   try {
-  //     const result = await this.accountRepository.sequelize.query(`SELECT
-  //       cl.clientId, cl.TIN, cl.endingbalance, cl.Date, cl.ID, cl.EntryType, cl.Description, cl.CreatedBy,
-  //       cl.GrossAmount,cl.TaxAmount, cl.taxcode, cl.viewTaxcode, cl."sourceReference", cl.clientStatus,
-  //       cl.report, cl.reported, cl.tid as "transactionid"
-  //       FROM
-  //       (
-  //       select
-  //       te."clientId" as clientId,
-  //       '' as TIN,
-  //       0 as EndingBalance,
-  //       to_char(t."transactionDate", 'mm/dd/yyyy') as Date,
-  //       --to_char(t."transactionDate", 'dd Mon YYYY') as Date,
-  //       t."transactionNo" as ID,
-  //       t."transactionType" as EntryType,
-  //       t."transactionDescription" as Description,
-  //       t."createdBy" as CreatedBy,
-  //       t.id as tid,
-  //       --te."accountId",
-  //       --(select "taxAssignAccountId" from "transactionEntry" where "transactionId"=t.id and "accountId"=te."accountId") as "taxAssignAccountId",
-  //       --(select amount from "transactionEntry" where "accountId"=cast((select "taxAssignAccountId" from "transactionEntry" where "transactionId"=t.id and "accountId"=te."accountId") as int) and "transactionId"=t.id) as GrossAmount,
-
-  //       (case when
-  //       (select amount from "transactionEntry" where "transactionId"=t.id and "trAccountCode"=te."trTaxCode") is null
-  //       then
-  //       (te.amount/((select tr.rate from "saleTax" st inner join "taxRate" tr on tr."saleTaxId"=st.id where st.id=ac."taxId")/100.00)
-  //       )
-  //       else
-  //       (select amount from "transactionEntry" where "transactionId"=t.id and "trAccountCode"=te."trTaxCode")
-  //       end) as GrossAmount,
-
-  //       te.amount as TaxAmount,
-  //       (select code from "saleTax" where id=ac."taxId") as taxcode,
-  //       (select "viewCode" from "saleTax" where id=ac."taxId") as viewTaxcode,
-  //       (case when t."sourceReference" is null then 'False' else 'True' end) as "sourceReference",
-
-  //       (case when t."isPosted"='true' then 'Added' else
-  //       (case when t."checkedBy" is not null then 'Checked' else
-  //       (case when t."isSendToAcc"='true' then 'Send to Accountant' else
-  //       (case when t."recorderBy" is not null then 'Recorded' else '' end)end)end)end) as clientStatus,
-
-  //       (case when te."VatRCheked" is null then 'False' else te."VatRCheked" end) as report,
-  //       (case when te."VatRCleared" is null then 'False' else te."VatRCleared" end) as reported
-  //       FROM transaction t
-  //       inner join "transactionEntry" te on te."transactionId"=t.id and te."companyId"=t."companyId"
-  //       inner join accounts ac on ac.id=te."accountId" and ac."companyId"=te."companyId"
-  //       where t."companyId"=${params.companyId}
-  //       and te."clientId" is not NULL
-  //       and te."vendorId" IS NULL and te."employeeId" IS NULL and te."isAllocated"='ALLOCATED'
-  //       and t."isPosted"='true' and t."isVoid"='false' and t."isDeleted"='false'
-  //       and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${params.endDate}' as date)
-  //       and ac."accountTypeId"=16) AS cl
-  //       order by cl.clientId, cl.tid`);
-  //     return result[0];
-  //   } catch (e) {
-  //     throw new HttpException(`Error: ${e}`, 500)
-  //   }
-  // }
 
   async getSummaryListOfSales(params) {
     let option;
@@ -6469,13 +5923,6 @@ ORDER BY cl.clientId, cl.tid, cl.taxcode, cl.teid`);
   }
 
   async createForCash(dto: CreateAccountDto) {
-    // const checkIsName = await this.accountRepository.findOne({
-    //   where: {
-    //     companyId: dto.companyId,
-    //     name: dto.name,
-    //   },
-    // });
-    // if (checkIsName) throw new HttpException('This name is used', 400);
     const noTax: any = await this.getNoTaxAccount(
       dto.companyId,
       dto.countryId,
