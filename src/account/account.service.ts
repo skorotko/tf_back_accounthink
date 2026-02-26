@@ -58,7 +58,7 @@ export class AccountService {
   }
 
   async createAccount(dto: CreateAccountDto): Promise<Account> {
-    console.log(dto);
+    console.log(dto); 
     try {
       let parentCodes;
       let parentTypeId;
