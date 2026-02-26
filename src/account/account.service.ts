@@ -122,6 +122,8 @@ export class AccountService {
         show,
       };
 
+      console.log(data);
+
       let newAccount = await this.accountRepository.create(data);
 
       console.log(newAccount);
