@@ -85,11 +85,11 @@ export class AccountService {
           where: { accountId: parentId },
         });
         let parentAccount = await this.getById(dto.parentId);
-        if (transaction){
-          console.log(parentAccount);
-          parentAccount.id = null
-          return parentAccount;
-        } 
+        if (transaction) {
+          const plainAccount = parentAccount.get({ plain: true });
+          plainAccount.id = null;
+          return plainAccount;
+        }
         parentCodes = {
           code: parentAccount.code,
           DRCRCode: parentAccount.DRCRCode,
