@@ -66,7 +66,7 @@ export class AccountTreeService {
       const [
         account, 
         clashflow, 
-        accountTree, // Предполагаю, что это массив IAccount[]
+        accountTree,
         saleTaxList, 
         withholdingTaxList
       ] = await Promise.all([
@@ -82,7 +82,7 @@ export class AccountTreeService {
       const withholdingTaxMap = new Map<number, ITax>(withholdingTaxList.map(t => [t.id, t]));
 
       if (account && account.length > 0) {
-        for (const x of account) { // Теперь 'x' автоматически типизируется как IAccount!
+        for (const x of account) {
           
           x.clashflowObj = clashflowMap.get(x.clashflowId) || null;
 
