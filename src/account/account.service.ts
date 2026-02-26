@@ -86,6 +86,7 @@ export class AccountService {
         });
         let parentAccount = await this.getById(dto.parentId);
         if (transaction){
+          console.log(parentAccount);
           parentAccount.id = null
           return parentAccount;
         } 
