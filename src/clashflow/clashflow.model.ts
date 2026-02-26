@@ -11,16 +11,8 @@ export class Clashflow extends Model<Clashflow, ClashflowCreateAttrs>{
   @Column({type: DataType.INTEGER, unique: true, autoIncrement: true, primaryKey: true, allowNull: false})
   id: number;
 
-  // @ApiProperty({example: '1', description: 'Unique company identification number'})
-  // @Column({type: DataType.INTEGER, allowNull: false})
-  // companyId: number;
-
   @Column({type: DataType.STRING, allowNull: false})
   name: string;
-
-  // @ApiProperty({example: 'false', description: 'Standard clashflow identifier'})
-  // @Column({type: DataType.BOOLEAN, defaultValue: false, allowNull: false})
-  // default: boolean;
 
   @HasMany(()=> Group)
   groups: Group[]

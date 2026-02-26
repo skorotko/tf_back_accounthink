@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { AccountService } from "../account/account.service";
 import { ClassesService } from "../classes/classes.service";
 import { GroupService } from "../group/group.service";
@@ -6,6 +6,7 @@ import { TypesService } from "../types/types.service";
 import { ClashflowService } from "../clashflow/clashflow.service";
 import { WithHoldingTaxService } from 'src/with-holding-tax/with-holding-tax.service';
 import { SaleTaxService } from 'src/sale-tax/sale-tax.service';
+import { IAccount, IClashflow, ITax, IAccountTreeResponse } from './types';
 
 @Injectable()
 export class AccountTreeService {
@@ -60,62 +61,73 @@ export class AccountTreeService {
     }
   }
 
-  async getAccountTree(companyId) {
+  async getAccountTree(companyId: number): Promise<IAccountTreeResponse> {
     try {
-      
-      let treeObj;
+      const [
+        account, 
+        clashflow, 
+        accountTree, // Предполагаю, что это массив IAccount[]
+        saleTaxList, 
+        withholdingTaxList
+      ] = await Promise.all([
+        this.accountService.getAccountsTreeByCompanyId(companyId) as Promise<IAccount[]>,
+        this.clashflowService.getAllClashflow() as Promise<IClashflow[]>,
+        this.getDataForTree(companyId) as Promise<IAccount[]>,
+        this.saleTax.getAll() as Promise<ITax[]>,
+        this.withHoldingTaxService.getAll() as Promise<ITax[]>
+      ]);
 
-      let account = await this.accountService.getAccountsTreeByCompanyId(companyId);
-      let clashflow = await this.clashflowService.getAllClashflow();
+      const clashflowMap = new Map<number, IClashflow>(clashflow.map(c => [c.id, c]));
+      const saleTaxMap = new Map<number, ITax>(saleTaxList.map(t => [t.id, t]));
+      const withholdingTaxMap = new Map<number, ITax>(withholdingTaxList.map(t => [t.id, t]));
 
-      let accountTree = await this.getDataForTree(companyId);
+      if (account && account.length > 0) {
+        for (const x of account) { // Теперь 'x' автоматически типизируется как IAccount!
+          
+          x.clashflowObj = clashflowMap.get(x.clashflowId) || null;
 
-      let saleTaxList = await this.saleTax.getAll();
-      let withholdingTaxList = await this.withHoldingTaxService.getAll();
-
-
-      if(account[0].length > 0){
-        account[0].map(x => {
-          let findTax;
-          let clashflowObj = clashflow.find(c => c.id === x.clashflowId);
-          x.clashflowObj = clashflowObj ? clashflowObj : null;
-          x.filePath = JSON.parse(x.filePath);
-          if (x.code) {
-            if (Number(x.code.slice(0, 1)) < 4)
-              x.report = 'BS';
-            else
-              x.report = 'IS';
+          if (x.filePath && typeof x.filePath === 'string') {
+            try {
+              x.filePath = JSON.parse(x.filePath);
+            } catch {
+              x.filePath = null;
+            }
           }
+
+          if (x.code) {
+            x.report = Number(x.code.charAt(0)) < 4 ? 'BS' : 'IS';
+          }
+
+          let findTax: ITax | undefined;
           if (x.taxTypeId === 1) {
-            findTax = saleTaxList.find(findTax => findTax.id === x.taxId);
-            x.nameTax = '';
-            //x.nameTax = findTax ? findTax.name : 'No tax';
-            x.codeTax = findTax ? findTax.code : 'No tax';
-            x.valueTax = findTax ? findTax.value : null;
+            findTax = saleTaxMap.get(x.taxId);
           } else if (x.taxTypeId === 2) {
-            findTax = withholdingTaxList.find(findTax => findTax.id === x.taxId);
-            x.nameTax = '';
-            //x.nameTax = findTax ? findTax.name : 'No tax';
-            x.codeTax = findTax ? findTax.code : 'No tax';
-            x.valueTax = findTax ? findTax.value : null;
+            findTax = withholdingTaxMap.get(x.taxId);
+          }
+
+          if (findTax) {
+            x.nameTax = ''; 
+            x.codeTax = findTax.code;
+            x.valueTax = findTax.value || null;
           } else {
             x.nameTax = 'No tax';
             x.codeTax = 'No tax';
-          } 
-          return accountTree.push(x)
-        });
+            x.valueTax = null;
+          }
+
+          accountTree.push(x);
+        }
       }
 
-      treeObj = {
+      return {
         accountTree,
         clashflowArr: clashflow
-      }
-
-      return treeObj;
+      };
 
     } catch (e) {
       console.log(e);
-      throw new HttpException(`Error: ${e}`, 500);
+      // Оставляем ваш try...catch, как вы и просили
+      throw new HttpException(`Error: ${e}`, 500); 
     }
   }
 
