@@ -131,53 +131,6 @@ export class AccountTreeService {
     }
   }
 
-  calculateBranchTotals(data) {
-  const nodeMap = new Map(data.map(item => [item.id, item]));
-
-  function calculateNodeTotal(nodeId) {
-    const node: any = nodeMap.get(nodeId);
-    if (!node) return 0;
-
-    const children = data.filter(item => item.filePath[item.filePath.length - 2] === nodeId);
-
-    if (children.length === 0) {
-      // Leaf node
-      node.amount = node.DRCRCode === 'DR' ? (node.debit || 0) : (node.credit || 0);
-      return node.amount;
-    }
-
-    // Non-leaf node
-    let creditTotal = 0;
-    let debitTotal = 0;
-
-    for (let child of children) {
-      let childTotal = calculateNodeTotal(child.id);
-      if (child.DRCRCode === 'DR') {
-        debitTotal += childTotal;
-      } else {
-        creditTotal += childTotal;
-      }
-    }
-
-    // Calculate the node's total based on its DRCRCode
-    if (node.DRCRCode === 'DR') {
-      node.amount = debitTotal - creditTotal;
-    } else {
-      node.amount = creditTotal - debitTotal;
-    }
-
-    return node.amount;
-  }
-
-  // Calculate totals for all top-level nodes
-  const topLevelNodes = data.filter(item => item.filePath.length === 1);
-  for (let node of topLevelNodes) {
-    calculateNodeTotal(node.id);
-  }
-
-  return data;
-}
-
   async getAccountDoubleTree(params) {
     try {
 
@@ -205,26 +158,7 @@ export class AccountTreeService {
         });
       }
 
-      // if (incomeStatement[0].length > 0) {
-      //   incomeStatement[0].map(x => {
-      //     let clashflowObj = clashflow.find(c => c.id === x.clashflowId);
-      //     x.clashflowObj = clashflowObj ? clashflowObj : null;
-      //     x.filePath = JSON.parse(x.filePath);
-      //     return accountTree.push(x)
-      //   });
-      // }
-
-      // accountTree.forEach(x => {
-      //   x.isChildren = true;
-      //   if (x.entityType === 'account'){
-      //     x.isChildren = false;
-      //     if (accountTree.find(el => el.parentId === x.id))
-      //       x.isChildren = true;
-      //   }
-      // })
-
       treeObj = {
-        //accountTree: this.alculateBranchTotals(accountTree),
         accountTree,
         clashflowArr: clashflow
       }

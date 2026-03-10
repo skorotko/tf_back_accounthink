@@ -384,10 +384,10 @@ export class ItemsService {
 			if (typeIdArr !== null) {
 				objWhere.itemsTypeId = typeIdArr
 			}
-			if (vendorListId)
-				if (vendorListId.length > 0) {
-					objWhere.vendorId = vendorListId
-				}
+			// if (vendorListId)
+			// 	if (vendorListId.length > 0) {
+			// 		objWhere.vendorId = vendorListId
+			// 	}
 			if (itemIdArr)
 				if(itemIdArr.length > 0) {
 					objWhere.id = {
