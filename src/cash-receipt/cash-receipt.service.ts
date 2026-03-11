@@ -180,8 +180,8 @@ export class CashReceiptService {
 				});
 			}
 			if (crd.inventoryAssetAccountId && crd.purchaseAccountId){
-				amount = crd.costPrice;
-				foreignAmount = crd.costPrice;
+				amount = crd.costPrice * crd.qty;
+				foreignAmount = crd.costPrice * crd.qty;
 				trEArr.push({
 					transactionId,
 					accountId: crd.inventoryAssetAccountId,
