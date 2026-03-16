@@ -181,6 +181,7 @@ export class ItemsOpenBalancesService {
 				attributes: ['id', 'companyId', 'itemId']
 			});
 			let itemIdArr = listOBD.map(x => x.itemId);
+			itemIdArr = [];
 			if (vendorListId.length === 0)
 				vendorListId = [null];
 			const itemsList = await this.itemsService.getListWithFilter(companyId, null, null, null, null, [2, 3], vendorListId, itemIdArr, null);
