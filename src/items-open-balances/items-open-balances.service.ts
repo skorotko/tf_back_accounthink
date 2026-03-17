@@ -231,19 +231,22 @@ export class ItemsOpenBalancesService {
 					message: `Failed to create item open balance: error create transaction`
 				}
 			const header = await this.createHeader(dto, transactionId);
-			if (!header)
+			if (!header){
 				return {
 					error: true,
 					data: null,
 					message: `Failed to create item open balance: error create header`
 				}
+			}
 			const init = await this.createWarhouseInit(dto);
-			if(init === true)
+			if(init === true){
+				await this.delete(header.id);
 				return {
 					error: true,
 					data: null,
 					message: `Failed to create item open balance: error create init`
 				}
+			}
 			const details = await this.bulkCreateDetails(dto, header.id);
 			return {
 				error: false,
