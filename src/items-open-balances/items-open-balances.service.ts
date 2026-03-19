@@ -351,16 +351,18 @@ export class ItemsOpenBalancesService {
 				item.itemsOBDList = item.itemsOBDList.map(it => {
 					it = it.get();
 					// console.log(it);
-					it.name = it.item.name;
-					it.code = it.item.code;
-					it.description = it.item.purchaseDescription ? it.item.purchaseDescription : it.item.sellDescription;
-					it.purchasePrice = it.item.purchasePrice;
-					it.sellPrice = it.item.sellPrice;
+					if(it.item){
+						it.name = it.item.name;
+						it.code = it.item.code;
+						it.description = it.item.purchaseDescription ? it.item.purchaseDescription : it.item.sellDescription;
+						it.purchasePrice = it.item.purchasePrice;
+						it.sellPrice = it.item.sellPrice;
+						it.unitName = it.item.unit.name;
+						it.purchaseTotal = it.item.purchasePrice * it.qty;
+						it.sellTotal = it.item.sellPrice * it.qty;
+						it.accountId = it.item.inventoryAssetAccountId ? it.item.inventoryAssetAccountId : it.item.purchaseAccountId
+					}
 					it.count = 1;
-					it.unitName = it.item.unit.name;
-					it.purchaseTotal = it.item.purchasePrice * it.qty;
-					it.sellTotal = it.item.sellPrice * it.qty;
-					it.accountId = it.item.inventoryAssetAccountId ? it.item.inventoryAssetAccountId : it.item.purchaseAccountId
 					delete(it.item);
 					return it;
 				});
