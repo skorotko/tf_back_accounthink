@@ -3821,6 +3821,7 @@ export class AccountService {
                     t."companyId" = ${companyId}
                     and ty."finDocName" = 'BALANCE SHEET'
                     and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
+                    and ac.name NOT IN ('Retained Earnings', 'Net Current Earnings') -- Исключаем тут
                 group by
                     ty."sortOrder",
                     ty.code,
@@ -3886,10 +3887,9 @@ export class AccountService {
                     t."companyId" = ${companyId}
                     and ty."finDocName" = 'BALANCE SHEET'
                     and t."transactionType" = 'ADJUSTING'
-                    and
-        cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${startDate}' as date)
-                    and
-        cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
+                    and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${startDate}' as date)
+                    and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
+                    and ac.name NOT IN ('Retained Earnings', 'Net Current Earnings') -- Исключаем тут
                 group by
                     ty."sortOrder",
                     ty.code,
@@ -3956,6 +3956,7 @@ export class AccountService {
                     and ty."finDocName" = 'BALANCE SHEET'
                     and t."transactionType" = 'ADJUSTING'
                     and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${lastDate}' as date)
+                    and ac.name NOT IN ('Retained Earnings', 'Net Current Earnings') -- Исключаем тут
                 group by
                     ty."sortOrder",
                     ty.code,
@@ -4109,10 +4110,9 @@ export class AccountService {
                 where
                     t."companyId" = ${companyId}
                     and ty."finDocName" = 'INCOME STATEMENT'
-                    and
-        cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${startDate}' as date)
-                        and
-        cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
+                    and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${startDate}' as date)
+                    and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
+                    and ac.name NOT IN ('Retained Earnings', 'Net Current Earnings') -- Исключаем тут
                     group by
                         ty."sortOrder",
                         ty.code,
