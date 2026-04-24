@@ -3474,819 +3474,843 @@ export class AccountService {
     endDate = endDate.split('-').join('/');
     lastDate = lastDate.split('-').join('/');
     try {
-      let result: any = await this.accountRepository.sequelize.query(`select
-       bs1.accountcode,
-        bs1.accountnumber,
-        bs1.accountname as account,
-        bs1.unadjdebit as unadjdebit,
-        bs1.unadjcredit as unadjcredit,
-        bs1.adjdebit as adjdebit,
-        bs1.adjcredit as adjcredit,
-        --bs1.prevadjdebit as prevadjdebit, bs1.prevadjcredit as prevadjcredit,
-        (case
-                when (bs1.unadjdebit = 0
-                and bs1.unadjcredit = 0
-                and bs1.adjdebit>0
-                and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
-                else
-        (case
-                    when bs1.unadjdebit>0
-                    and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
-                    else 0
-                end)
-            end) as adjtbdebit,
-            (case
-                when (bs1.unadjdebit = 0
-                and bs1.unadjcredit = 0
-                and bs1.adjdebit = 0
-                and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
-                else
-        (case
-                    when bs1.unadjcredit>0
-                    and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
-                    else 0
-                end)
-            end) as adjtbcredit,
-            (case
-                when bs1."finDocName" = 'INCOME STATEMENT' then
-        (case
-                    when (bs1.unadjdebit = 0
-                    and bs1.unadjcredit = 0
-                    and bs1.adjdebit>0
-                    and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
-                    else
-        (case
-                        when bs1.unadjdebit>0
-                        and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
-                        else 0
-                    end)
-                end)
-                else 0
-            end) as isdebit,
-            (case
-                when bs1."finDocName" = 'INCOME STATEMENT' then
-        (case
-                    when (bs1.unadjdebit = 0
-                    and bs1.unadjcredit = 0
-                    and bs1.adjdebit = 0
-                    and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
-                    else
-        (case
-                        when bs1.unadjcredit>0
-                        and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
-                        else 0
-                    end)
-                end)
-                else 0
-                end) as iscredit,
+      let result: any = await this.accountRepository.sequelize.query(`
+        SELECT 
+            accountcode,
+            accountnumber,
+            MAX(account) as account,
+            
+            (CASE WHEN SUM(unadjcredit) > SUM(unadjdebit) THEN 0 ELSE SUM(unadjdebit) - SUM(unadjcredit) END) as unadjdebit,
+            (CASE WHEN SUM(unadjcredit) > SUM(unadjdebit) THEN SUM(unadjcredit) - SUM(unadjdebit) ELSE 0 END) as unadjcredit,
+            
+            (CASE WHEN SUM(adjcredit) > SUM(adjdebit) THEN 0 ELSE SUM(adjdebit) - SUM(adjcredit) END) as adjdebit,
+            (CASE WHEN SUM(adjcredit) > SUM(adjdebit) THEN SUM(adjcredit) - SUM(adjdebit) ELSE 0 END) as adjcredit,
+            
+            (CASE WHEN SUM(adjtbcredit) > SUM(adjtbdebit) THEN 0 ELSE SUM(adjtbdebit) - SUM(adjtbcredit) END) as adjtbdebit,
+            (CASE WHEN SUM(adjtbcredit) > SUM(adjtbdebit) THEN SUM(adjtbcredit) - SUM(adjtbdebit) ELSE 0 END) as adjtbcredit,
+            
+            (CASE WHEN SUM(iscredit) > SUM(isdebit) THEN 0 ELSE SUM(isdebit) - SUM(iscredit) END) as isdebit,
+            (CASE WHEN SUM(iscredit) > SUM(isdebit) THEN SUM(iscredit) - SUM(isdebit) ELSE 0 END) as iscredit,
+            
+            (CASE WHEN SUM(closingcredit) > SUM(closingdebit) THEN 0 ELSE SUM(closingdebit) - SUM(closingcredit) END) as closingdebit,
+            (CASE WHEN SUM(closingcredit) > SUM(closingdebit) THEN SUM(closingcredit) - SUM(closingdebit) ELSE 0 END) as closingcredit,
+            
+            (CASE WHEN SUM(posttbcredit) > SUM(posttbdebit) THEN 0 ELSE SUM(posttbdebit) - SUM(posttbcredit) END) as posttbdebit,
+            (CASE WHEN SUM(posttbcredit) > SUM(posttbdebit) THEN SUM(posttbcredit) - SUM(posttbdebit) ELSE 0 END) as posttbcredit,
+            
+            (CASE WHEN SUM(bscredit) > SUM(bsdebit) THEN 0 ELSE SUM(bsdebit) - SUM(bscredit) END) as bsdebit,
+            (CASE WHEN SUM(bscredit) > SUM(bsdebit) THEN SUM(bscredit) - SUM(bsdebit) ELSE 0 END) as bscredit,
+            
+            accountid
+        FROM (
+            select
+                bs1.accountcode,
+                bs1.accountnumber,
+                bs1.accountname as account,
+                bs1.unadjdebit as unadjdebit,
+                bs1.unadjcredit as unadjcredit,
+                bs1.adjdebit as adjdebit,
+                bs1.adjcredit as adjcredit,
                 (case
-                when bs1."finDocName" = 'INCOME STATEMENT' then
-        (case
-                    when (bs1.unadjdebit = 0
-                    and bs1.unadjcredit = 0
-                    and bs1.adjdebit = 0
-                    and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
-                    else
-        (case
-                        when bs1.unadjcredit>0
-                        and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
-                        else 0
-                    end)
-                end)
-                else 0
-            end) as closingdebit,
-            (case
-                when bs1."finDocName" = 'INCOME STATEMENT' then
-        (case
-                    when (bs1.unadjdebit = 0
-                    and bs1.unadjcredit = 0
-                    and bs1.adjdebit>0
-                    and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
-                    else
-        (case
-                        when bs1.unadjdebit>0
-                        and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
-                        else 0
-                    end)
-                end)
-                else 0
-            end) as closingcredit,
-            (case
-                when bs1."finDocName" = 'BALANCE SHEET' then
-        (case
-                    when (bs1.unadjdebit = 0
-                    and bs1.unadjcredit = 0
-                    and bs1.adjdebit>0
-                    and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
-                    else
-        (case
-                        when bs1.unadjdebit>0
-                        and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
-                        else 0
-                    end)
-                end)
-                else
-        (
-        (case
-                    when bs1."finDocName" = 'INCOME STATEMENT' then
-        (case
                         when (bs1.unadjdebit = 0
                         and bs1.unadjcredit = 0
                         and bs1.adjdebit>0
                         and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
                         else
-        (case
+                (case
                             when bs1.unadjdebit>0
                             and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
                             else 0
-                    end)
-                    end)
-                    else 0
-                end) -
-        (case
+                        end)
+                    end) as adjtbdebit,
+                    (case
+                        when (bs1.unadjdebit = 0
+                        and bs1.unadjcredit = 0
+                        and bs1.adjdebit = 0
+                        and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                        else
+                (case
+                            when bs1.unadjcredit>0
+                            and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                            else 0
+                        end)
+                    end) as adjtbcredit,
+                    (case
                         when bs1."finDocName" = 'INCOME STATEMENT' then
-        (case
-                        when (bs1.unadjdebit = 0
-                        and bs1.unadjcredit = 0
-                        and bs1.adjdebit>0
-                        and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
-                        else
-        (case
-                            when bs1.unadjdebit>0
-                            and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
-                            else 0
+                (case
+                            when (bs1.unadjdebit = 0
+                            and bs1.unadjcredit = 0
+                            and bs1.adjdebit>0
+                            and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
+                            else
+                (case
+                                when bs1.unadjdebit>0
+                                and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
+                                else 0
+                            end)
                         end)
-                    end)
-                    else 0
-                end)
-        )
-            end) as posttbdebit,
-            (case
-                when bs1."finDocName" = 'BALANCE SHEET' then
-        (case
-                    when (bs1.unadjdebit = 0
-                    and bs1.unadjcredit = 0
-                    and bs1.adjdebit = 0
-                    and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
-                    else
-        (case
-                        when bs1.unadjcredit>0
-                        and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
                         else 0
-                    end)
-                end)
-                else
-        (
-        (case
-                    when bs1."finDocName" = 'INCOME STATEMENT' then
-        (case
-                        when (bs1.unadjdebit = 0
-                        and bs1.unadjcredit = 0
-                        and bs1.adjdebit = 0
-                        and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
-                        else
-        (case
-                            when bs1.unadjcredit>0
-                            and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
-                            else 0
+                    end) as isdebit,
+                    (case
+                        when bs1."finDocName" = 'INCOME STATEMENT' then
+                (case
+                            when (bs1.unadjdebit = 0
+                            and bs1.unadjcredit = 0
+                            and bs1.adjdebit = 0
+                            and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                            else
+                (case
+                                when bs1.unadjcredit>0
+                                and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                                else 0
+                            end)
                         end)
-                    end)
-                    else 0
-                end) -
-        (case
-                    when bs1."finDocName" = 'INCOME STATEMENT' then
-        (case
-                        when (bs1.unadjdebit = 0
-                        and bs1.unadjcredit = 0
-                        and bs1.adjdebit = 0
-                        and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
-                        else
-        (case
-                            when bs1.unadjcredit>0
-                            and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
-                            else 0
+                        else 0
+                        end) as iscredit,
+                        (case
+                        when bs1."finDocName" = 'INCOME STATEMENT' then
+                (case
+                            when (bs1.unadjdebit = 0
+                            and bs1.unadjcredit = 0
+                            and bs1.adjdebit = 0
+                            and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                            else
+                (case
+                                when bs1.unadjcredit>0
+                                and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                                else 0
+                            end)
                         end)
-                    end)
-                    else 0
-                end)
-        )
-            end) as posttbcredit,
-            (case
-                when bs1."finDocName" = 'BALANCE SHEET' then
-        (case
-                    when (bs1.unadjdebit = 0
-                    and bs1.unadjcredit = 0
-                    and bs1.adjdebit>0
-                    and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
-                    else
-        (case
-                        when bs1.unadjdebit>0
-                        and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
                         else 0
-                    end)
-                end)
-                else 0
-            end) as bsdebit,
-            (case
-                when bs1."finDocName" = 'BALANCE SHEET' then
-        (case
-                    when (bs1.unadjdebit = 0
-                    and bs1.unadjcredit = 0
-                    and bs1.adjdebit = 0
-                    and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
-                    else
-        (case
-                        when bs1.unadjcredit>0
-                        and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                    end) as closingdebit,
+                    (case
+                        when bs1."finDocName" = 'INCOME STATEMENT' then
+                (case
+                            when (bs1.unadjdebit = 0
+                            and bs1.unadjcredit = 0
+                            and bs1.adjdebit>0
+                            and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
+                            else
+                (case
+                                when bs1.unadjdebit>0
+                                and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
+                                else 0
+                            end)
+                        end)
                         else 0
-                    end)
-                end)
-                else 0
-            end) as bscredit,
-            bs1.accountid
-        from
-            (
-            select
-                bs."sortOrder",
-                bs."finDocName",
-                bs.typecode,
-                bs.typename,
-                bs.classcode,
-                bs.classname,
-                bs.groupcode,
-                bs.groupname,
-                bs.accountcode,
-                bs.accountnumber,
-                bs.accountname,
+                    end) as closingcredit,
+                    (case
+                        when bs1."finDocName" = 'BALANCE SHEET' then
                 (case
-                    when
-        sum((case when bs."DRCRCode" = 'CR' then (bs.unadjcredit-bs.unadjdebit)+(bs.prevadjcredit-bs.prevadjdebit) else 0 end))<0
-        then abs(sum((case when bs."DRCRCode" = 'CR' then (bs.unadjcredit-bs.unadjdebit)+(bs.prevadjcredit-bs.prevadjdebit) else 0 end)))
-                    else
-        (
-        case
-                        when sum((case when bs."DRCRCode" = 'DR' then (bs.unadjdebit-bs.unadjcredit)+(bs.prevadjdebit-bs.prevadjcredit) else 0 end))<0
-        then 0
-                        else sum((case when bs."DRCRCode" = 'DR' then (bs.unadjdebit-bs.unadjcredit)+(bs.prevadjdebit-bs.prevadjcredit) else 0 end))
-                    end
-        )
-                end) as unadjdebit,
+                            when (bs1.unadjdebit = 0
+                            and bs1.unadjcredit = 0
+                            and bs1.adjdebit>0
+                            and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
+                            else
                 (case
-                    when
-        sum((case when bs."DRCRCode" = 'DR' then (bs.unadjdebit-bs.unadjcredit)+(bs.prevadjdebit-bs.prevadjcredit) else 0 end))<0
-        then abs(sum((case when bs."DRCRCode" = 'DR' then (bs.unadjdebit-bs.unadjcredit)+(bs.prevadjdebit-bs.prevadjcredit) else 0 end)))
-                    else
-        (
-        case
-                        when sum((case when bs."DRCRCode" = 'CR' then (bs.unadjcredit-bs.unadjdebit)+(bs.prevadjcredit-bs.prevadjdebit) else 0 end))<0
-        then 0
-                        else sum((case when bs."DRCRCode" = 'CR' then (bs.unadjcredit-bs.unadjdebit)+(bs.prevadjcredit-bs.prevadjdebit) else 0 end))
-                    end
-        )
-                end) as unadjcredit,
-                (case
-                    when
-        sum((case when bs."DRCRCode" = 'CR' then (bs.adjcredit-bs.adjdebit) else 0 end))<0
-        then abs(sum((case when bs."DRCRCode" = 'CR' then (bs.adjcredit-bs.adjdebit) else 0 end)))
-                    else
-        (
-        case
-                        when sum((case when bs."DRCRCode" = 'DR' then (bs.adjdebit-bs.adjcredit) else 0 end))<0
-        then 0
-                        else sum((case when bs."DRCRCode" = 'DR' then (bs.adjdebit-bs.adjcredit) else 0 end))
-                    end
-        )
-                end) as adjdebit,
-                (case
-                    when
-        sum((case when bs."DRCRCode" = 'DR' then bs.adjdebit-bs.adjcredit else 0 end))<0
-        then abs(sum((case when bs."DRCRCode" = 'DR' then bs.adjdebit-bs.adjcredit else 0 end)))
-                    else
-        (
-        case
-                        when sum((case when bs."DRCRCode" = 'CR' then bs.adjcredit-bs.adjdebit else 0 end))<0
-        then 0
-                        else sum((case when bs."DRCRCode" = 'CR' then bs.adjcredit-bs.adjdebit else 0 end))
-                    end
-        )
-                end) as adjcredit,
-                bs.accountid
-            from
+                                when bs1.unadjdebit>0
+                                and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
+                                else 0
+                            end)
+                        end)
+                        else
                 (
-                select
-                    ty."sortOrder",
-                    ty.code as typecode,
-                    ty.name as typename,
-                    cl.code as classcode,
-                    cl.name as classname,
-                    gp.code as groupcode,
-                    gp.name as groupname,
-                    ac.code as accountcode,
-                    ac.number as accountnumber,
-                    ac.name as accountname,
-                    ac."DRCRCode",
-                    ty."finDocName",
-                    (case
-                        when te."DRCRCode" = 'DR'
-                        and t."transactionType" <> 'ADJUSTING' then sum(te.amount)
-                        else 0
-                    end) as unadjdebit,
-                    (case
-                        when te."DRCRCode" = 'CR'
-                        and t."transactionType" <> 'ADJUSTING' then sum(te.amount)
-                        else 0
-                    end) as unadjcredit,
-                    0 as adjdebit,
-                    0 as adjcredit,
-                    0 as prevadjdebit,
-                    0 as prevadjcredit,
-                    ac.id as accountid
-                from
-                    types ty
-                inner join classes cl on
-                    cl."typeId" = ty.id
-                inner join groups gp on
-                    gp."classId" = cl.id
-                    and cl."companyId" = gp."companyId"
-                inner join accounts ac on
-                    ac."groupId" = gp.id
-                    and gp."companyId" = ac."companyId"
-                inner join "transactionEntry" te on
-                    te."accountId" = ac.id
-                    and te."companyId" = ac."companyId"
-                inner join transaction t on
-                    t.id = te."transactionId"
-                    and t."companyId" = te."companyId"
-                where
-                    t."companyId" = ${companyId}
-                    and ty."finDocName" = 'BALANCE SHEET'
-                    and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
-                    and ac.name NOT IN ('Retained Earnings', 'Net Current Earnings') -- Исключаем тут
-                group by
-                    ty."sortOrder",
-                    ty.code,
-                    ty.name,
-                    cl.code,
-                    cl.name,
-                    gp.code,
-                    gp.name,
-                    ac.code,
-                    ac.number,
-                    ac.name,
-                    ac."DRCRCode",
-                    te."DRCRCode",
-                    t."transactionType",
-                    ty."finDocName",
-                    ac.id
-            union all
-                select
-                    ty."sortOrder",
-                    ty.code as typecode,
-                    ty.name as typename,
-                    cl.code as classcode,
-                    cl.name as classname,
-                    gp.code as groupcode,
-                    gp.name as groupname,
-                    ac.code as accountcode,
-                    ac.number as accountnumber,
-                    ac.name as accountname,
-                    ac."DRCRCode",
-                    ty."finDocName",
-                    0 as unadjdebit,
-                    0 as unadjcredit,
-                    (case
-                        when te."DRCRCode" = 'DR'
-                            and t."transactionType" = 'ADJUSTING' then sum(te.amount)
-                            else 0
-                        end) as adjdebit,
-                    (case
-                        when te."DRCRCode" = 'CR'
-                            and t."transactionType" = 'ADJUSTING' then sum(te.amount)
-                            else 0
-                        end) as adjcredit,
-                    0 as prevadjdebit,
-                    0 as prevadjcredit,
-                    ac.id as accountid
-                from
-                    types ty
-                inner join classes cl on
-                    cl."typeId" = ty.id
-                inner join groups gp on
-                    gp."classId" = cl.id
-                    and cl."companyId" = gp."companyId"
-                inner join accounts ac on
-                    ac."groupId" = gp.id
-                    and gp."companyId" = ac."companyId"
-                inner join "transactionEntry" te on
-                    te."accountId" = ac.id
-                    and te."companyId" = ac."companyId"
-                inner join transaction t on
-                    t.id = te."transactionId"
-                    and t."companyId" = te."companyId"
-                where
-                    t."companyId" = ${companyId}
-                    and ty."finDocName" = 'BALANCE SHEET'
-                    and t."transactionType" = 'ADJUSTING'
-                    and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${startDate}' as date)
-                    and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
-                    and ac.name NOT IN ('Retained Earnings', 'Net Current Earnings') -- Исключаем тут
-                group by
-                    ty."sortOrder",
-                    ty.code,
-                    ty.name,
-                    cl.code,
-                    cl.name,
-                    gp.code,
-                    gp.name,
-                    ac.code,
-                    ac.number,
-                    ac.name,
-                    ac."DRCRCode",
-                    te."DRCRCode",
-                    t."transactionType",
-                    ty."finDocName",
-                    ac.id
-            union all
-                select
-                    ty."sortOrder",
-                    ty.code as typecode,
-                    ty.name as typename,
-                    cl.code as classcode,
-                    cl.name as classname,
-                    gp.code as groupcode,
-                    gp.name as groupname,
-                    ac.code as accountcode,
-                    ac.number as accountnumber,
-                    ac.name as accountname,
-                    ac."DRCRCode",
-                    ty."finDocName",
-                    0 as unadjdebit,
-                    0 as unadjcredit,
-                    0 as unadjdebit,
-                    0 as unadjcredit,
-                    (case
-                        when te."DRCRCode" = 'DR'
-                            and t."transactionType" = 'ADJUSTING' then sum(te.amount)
-                            else 0
-                        end) as prevadjdebit,
-                    (case
-                        when te."DRCRCode" = 'CR'
-                            and t."transactionType" = 'ADJUSTING' then sum(te.amount)
-                            else 0
-                        end) as prevadjcredit,
-                    ac.id as accountid
-                from
-                    types ty
-                inner join classes cl on
-                    cl."typeId" = ty.id
-                inner join groups gp on
-                    gp."classId" = cl.id
-                    and cl."companyId" = gp."companyId"
-                inner join accounts ac on
-                    ac."groupId" = gp.id
-                    and gp."companyId" = ac."companyId"
-                inner join "transactionEntry" te on
-                    te."accountId" = ac.id
-                    and te."companyId" = ac."companyId"
-                inner join transaction t on
-                    t.id = te."transactionId"
-                    and t."companyId" = te."companyId"
-                where
-                    t."companyId" = ${companyId}
-                    and ty."finDocName" = 'BALANCE SHEET'
-                    and t."transactionType" = 'ADJUSTING'
-                    and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${lastDate}' as date)
-                    and ac.name NOT IN ('Retained Earnings', 'Net Current Earnings') -- Исключаем тут
-                group by
-                    ty."sortOrder",
-                    ty.code,
-                    ty.name,
-                    cl.code,
-                    cl.name,
-                    gp.code,
-                    gp.name,
-                    ac.code,
-                    ac.number,
-                    ac.name,
-                    ac."DRCRCode",
-                    te."DRCRCode",
-                    t."transactionType",
-                    ty."finDocName",
-                    ac.id
-        ) as bs
-            group by
-                bs."sortOrder",
-                bs.typecode,
-                bs.typename,
-                bs.classcode,
-                bs.classname,
-                bs.groupcode,
-                bs.groupname,
-                bs.accountcode,
-                bs.accountnumber,
-                bs.accountname,
-                bs."finDocName",
-                bs.accountid
-        union all
-            select
-                bs."sortOrder",
-                bs."finDocName",
-                bs.typecode,
-                bs.typename,
-                bs.classcode,
-                bs.classname,
-                bs.groupcode,
-                bs.groupname,
-                bs.accountcode,
-                bs.accountnumber,
-                bs.accountname,
                 (case
-                    when
-        sum((case when bs."DRCRCode" = 'CR' then bs.unadjcredit-bs.unadjdebit else 0 end))<0
-        then abs(sum((case when bs."DRCRCode" = 'CR' then bs.unadjcredit-bs.unadjdebit else 0 end)))
-                    else
-        (
-        case
-                        when sum((case when bs."DRCRCode" = 'DR' then bs.unadjdebit-bs.unadjcredit else 0 end))<0
-        then 0
-                        else sum((case when bs."DRCRCode" = 'DR' then bs.unadjdebit-bs.unadjcredit else 0 end))
-                    end
-        )
-                end) as unadjdebit,
+                            when bs1."finDocName" = 'INCOME STATEMENT' then
                 (case
-                    when
-        sum((case when bs."DRCRCode" = 'DR' then bs.unadjdebit-bs.unadjcredit else 0 end))<0
-        then abs(sum((case when bs."DRCRCode" = 'DR' then bs.unadjdebit-bs.unadjcredit else 0 end)))
-                    else
-        (
-        case
-                        when sum((case when bs."DRCRCode" = 'CR' then bs.unadjcredit-bs.unadjdebit else 0 end))<0
-        then 0
-                        else sum((case when bs."DRCRCode" = 'CR' then bs.unadjcredit-bs.unadjdebit else 0 end))
-                    end
-        )
-                end) as unadjcredit,
+                                when (bs1.unadjdebit = 0
+                                and bs1.unadjcredit = 0
+                                and bs1.adjdebit>0
+                                and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
+                                else
                 (case
-                    when
-        sum((case when bs."DRCRCode" = 'CR' then bs.adjcredit-bs.adjdebit else 0 end))<0
-        then abs(sum((case when bs."DRCRCode" = 'CR' then bs.adjcredit-bs.adjdebit else 0 end)))
-                    else
-        (
-        case
-                        when sum((case when bs."DRCRCode" = 'DR' then bs.adjdebit-bs.adjcredit else 0 end))<0
-        then 0
-                        else sum((case when bs."DRCRCode" = 'DR' then bs.adjdebit-bs.adjcredit else 0 end))
-                    end
-        )
-                end) as adjdebit,
+                                    when bs1.unadjdebit>0
+                                    and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
+                                    else 0
+                            end)
+                            end)
+                            else 0
+                        end) -
                 (case
-                    when
-        sum((case when bs."DRCRCode" = 'DR' then bs.adjdebit-bs.adjcredit else 0 end))<0
-        then abs(sum((case when bs."DRCRCode" = 'DR' then bs.adjdebit-bs.adjcredit else 0 end)))
-                    else
-        (
-        case
-                        when sum((case when bs."DRCRCode" = 'CR' then bs.adjcredit-bs.adjdebit else 0 end))<0
-        then 0
-                        else sum((case when bs."DRCRCode" = 'CR' then bs.adjcredit-bs.adjdebit else 0 end))
-                    end
-        )
-                end) as adjcredit,
-                bs.accountid
-            from
+                                when bs1."finDocName" = 'INCOME STATEMENT' then
+                (case
+                                when (bs1.unadjdebit = 0
+                                and bs1.unadjcredit = 0
+                                and bs1.adjdebit>0
+                                and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
+                                else
+                (case
+                                    when bs1.unadjdebit>0
+                                    and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
+                                    else 0
+                                end)
+                            end)
+                            else 0
+                        end)
+                )
+                    end) as posttbdebit,
+                    (case
+                        when bs1."finDocName" = 'BALANCE SHEET' then
+                (case
+                            when (bs1.unadjdebit = 0
+                            and bs1.unadjcredit = 0
+                            and bs1.adjdebit = 0
+                            and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                            else
+                (case
+                                when bs1.unadjcredit>0
+                                and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                                else 0
+                            end)
+                        end)
+                        else
                 (
-                select
-                    ty."sortOrder",
-                    ty.code as typecode,
-                    ty.name as typename,
-                    cl.code as classcode,
-                    cl.name as classname,
-                    gp.code as groupcode,
-                    gp.name as groupname,
-                    ac.code as accountcode,
-                    ac.number as accountnumber,
-                    ac.name as accountname,
-                    ac."DRCRCode",
-                    ty."finDocName",
-                    (case
-                        when te."DRCRCode" = 'DR'
-                            and t."transactionType" <> 'ADJUSTING' then sum(te.amount)
+                (case
+                            when bs1."finDocName" = 'INCOME STATEMENT' then
+                (case
+                                when (bs1.unadjdebit = 0
+                                and bs1.unadjcredit = 0
+                                and bs1.adjdebit = 0
+                                and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                                else
+                (case
+                                    when bs1.unadjcredit>0
+                                    and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                                    else 0
+                                end)
+                            end)
                             else 0
+                        end) -
+                (case
+                            when bs1."finDocName" = 'INCOME STATEMENT' then
+                (case
+                                when (bs1.unadjdebit = 0
+                                and bs1.unadjcredit = 0
+                                and bs1.adjdebit = 0
+                                and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                                else
+                (case
+                                    when bs1.unadjcredit>0
+                                    and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                                    else 0
+                                end)
+                            end)
+                            else 0
+                        end)
+                )
+                    end) as posttbcredit,
+                    (case
+                        when bs1."finDocName" = 'BALANCE SHEET' then
+                (case
+                            when (bs1.unadjdebit = 0
+                            and bs1.unadjcredit = 0
+                            and bs1.adjdebit>0
+                            and bs1.adjcredit = 0) then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
+                            else
+                (case
+                                when bs1.unadjdebit>0
+                                and bs1.unadjcredit = 0 then (bs1.unadjdebit-bs1.unadjcredit) + (bs1.adjdebit-bs1.adjcredit)
+                                else 0
+                            end)
+                        end)
+                        else 0
+                    end) as bsdebit,
+                    (case
+                        when bs1."finDocName" = 'BALANCE SHEET' then
+                (case
+                            when (bs1.unadjdebit = 0
+                            and bs1.unadjcredit = 0
+                            and bs1.adjdebit = 0
+                            and bs1.adjcredit>0) then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                            else
+                (case
+                                when bs1.unadjcredit>0
+                                and bs1.unadjdebit = 0 then (bs1.unadjcredit-bs1.unadjdebit) + (bs1.adjcredit-bs1.adjdebit)
+                                else 0
+                            end)
+                        end)
+                        else 0
+                    end) as bscredit,
+                    bs1.accountid
+                from
+                    (
+                    select
+                        bs."sortOrder",
+                        bs."finDocName",
+                        bs.typecode,
+                        bs.typename,
+                        bs.classcode,
+                        bs.classname,
+                        bs.groupcode,
+                        bs.groupname,
+                        bs.accountcode,
+                        bs.accountnumber,
+                        bs.accountname,
+                        (case
+                            when
+                sum((case when bs."DRCRCode" = 'CR' then (bs.unadjcredit-bs.unadjdebit)+(bs.prevadjcredit-bs.prevadjdebit) else 0 end))<0
+                then abs(sum((case when bs."DRCRCode" = 'CR' then (bs.unadjcredit-bs.unadjdebit)+(bs.prevadjcredit-bs.prevadjdebit) else 0 end)))
+                            else
+                (
+                case
+                                when sum((case when bs."DRCRCode" = 'DR' then (bs.unadjdebit-bs.unadjcredit)+(bs.prevadjdebit-bs.prevadjcredit) else 0 end))<0
+                then 0
+                                else sum((case when bs."DRCRCode" = 'DR' then (bs.unadjdebit-bs.unadjcredit)+(bs.prevadjdebit-bs.prevadjcredit) else 0 end))
+                            end
+                )
                         end) as unadjdebit,
-                    (case
-                        when te."DRCRCode" = 'CR'
-                            and t."transactionType" <> 'ADJUSTING' then sum(te.amount)
-                            else 0
+                        (case
+                            when
+                sum((case when bs."DRCRCode" = 'DR' then (bs.unadjdebit-bs.unadjcredit)+(bs.prevadjdebit-bs.prevadjcredit) else 0 end))<0
+                then abs(sum((case when bs."DRCRCode" = 'DR' then (bs.unadjdebit-bs.unadjcredit)+(bs.prevadjdebit-bs.prevadjcredit) else 0 end)))
+                            else
+                (
+                case
+                                when sum((case when bs."DRCRCode" = 'CR' then (bs.unadjcredit-bs.unadjdebit)+(bs.prevadjcredit-bs.prevadjdebit) else 0 end))<0
+                then 0
+                                else sum((case when bs."DRCRCode" = 'CR' then (bs.unadjcredit-bs.unadjdebit)+(bs.prevadjcredit-bs.prevadjdebit) else 0 end))
+                            end
+                )
                         end) as unadjcredit,
-                    (case
-                        when te."DRCRCode" = 'DR'
-                            and t."transactionType" = 'ADJUSTING' then sum(te.amount)
-                            else 0
+                        (case
+                            when
+                sum((case when bs."DRCRCode" = 'CR' then (bs.adjcredit-bs.adjdebit) else 0 end))<0
+                then abs(sum((case when bs."DRCRCode" = 'CR' then (bs.adjcredit-bs.adjdebit) else 0 end)))
+                            else
+                (
+                case
+                                when sum((case when bs."DRCRCode" = 'DR' then (bs.adjdebit-bs.adjcredit) else 0 end))<0
+                then 0
+                                else sum((case when bs."DRCRCode" = 'DR' then (bs.adjdebit-bs.adjcredit) else 0 end))
+                            end
+                )
                         end) as adjdebit,
-                    (case
-                        when te."DRCRCode" = 'CR'
-                            and t."transactionType" = 'ADJUSTING' then sum(te.amount)
-                            else 0
+                        (case
+                            when
+                sum((case when bs."DRCRCode" = 'DR' then bs.adjdebit-bs.adjcredit else 0 end))<0
+                then abs(sum((case when bs."DRCRCode" = 'DR' then bs.adjdebit-bs.adjcredit else 0 end)))
+                            else
+                (
+                case
+                                when sum((case when bs."DRCRCode" = 'CR' then bs.adjcredit-bs.adjdebit else 0 end))<0
+                then 0
+                                else sum((case when bs."DRCRCode" = 'CR' then bs.adjcredit-bs.adjdebit else 0 end))
+                            end
+                )
                         end) as adjcredit,
-                    0 as prevadjdebit,
-                    0 as prevadjcredit,
-                    ac.id as accountid
-                from
-                    types ty
-                inner join classes cl on
-                    cl."typeId" = ty.id
-                inner join groups gp on
-                    gp."classId" = cl.id
-                    and cl."companyId" = gp."companyId"
-                inner join accounts ac on
-                    ac."groupId" = gp.id
-                    and gp."companyId" = ac."companyId"
-                inner join "transactionEntry" te on
-                    te."accountId" = ac.id
-                    and te."companyId" = ac."companyId"
-                inner join transaction t on
-                    t.id = te."transactionId"
-                    and t."companyId" = te."companyId"
-                where
-                    t."companyId" = ${companyId}
-                    and ty."finDocName" = 'INCOME STATEMENT'
-                    and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${startDate}' as date)
-                    and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
-                    and ac.name NOT IN ('Retained Earnings', 'Net Current Earnings') -- Исключаем тут
+                        bs.accountid
+                    from
+                        (
+                        select
+                            ty."sortOrder",
+                            ty.code as typecode,
+                            ty.name as typename,
+                            cl.code as classcode,
+                            cl.name as classname,
+                            gp.code as groupcode,
+                            gp.name as groupname,
+                            ac.code as accountcode,
+                            ac.number as accountnumber,
+                            ac.name as accountname,
+                            ac."DRCRCode",
+                            ty."finDocName",
+                            (case
+                                when te."DRCRCode" = 'DR'
+                                and t."transactionType" <> 'ADJUSTING' then sum(te.amount)
+                                else 0
+                            end) as unadjdebit,
+                            (case
+                                when te."DRCRCode" = 'CR'
+                                and t."transactionType" <> 'ADJUSTING' then sum(te.amount)
+                                else 0
+                            end) as unadjcredit,
+                            0 as adjdebit,
+                            0 as adjcredit,
+                            0 as prevadjdebit,
+                            0 as prevadjcredit,
+                            ac.id as accountid
+                        from
+                            types ty
+                        inner join classes cl on
+                            cl."typeId" = ty.id
+                        inner join groups gp on
+                            gp."classId" = cl.id
+                            and cl."companyId" = gp."companyId"
+                        inner join accounts ac on
+                            ac."groupId" = gp.id
+                            and gp."companyId" = ac."companyId"
+                        inner join "transactionEntry" te on
+                            te."accountId" = ac.id
+                            and te."companyId" = ac."companyId"
+                        inner join transaction t on
+                            t.id = te."transactionId"
+                            and t."companyId" = te."companyId"
+                        where
+                            t."companyId" = ${companyId}
+                            and ty."finDocName" = 'BALANCE SHEET'
+                            and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
+                        group by
+                            ty."sortOrder",
+                            ty.code,
+                            ty.name,
+                            cl.code,
+                            cl.name,
+                            gp.code,
+                            gp.name,
+                            ac.code,
+                            ac.number,
+                            ac.name,
+                            ac."DRCRCode",
+                            te."DRCRCode",
+                            t."transactionType",
+                            ty."finDocName",
+                            ac.id
+                    union all
+                        select
+                            ty."sortOrder",
+                            ty.code as typecode,
+                            ty.name as typename,
+                            cl.code as classcode,
+                            cl.name as classname,
+                            gp.code as groupcode,
+                            gp.name as groupname,
+                            ac.code as accountcode,
+                            ac.number as accountnumber,
+                            ac.name as accountname,
+                            ac."DRCRCode",
+                            ty."finDocName",
+                            0 as unadjdebit,
+                            0 as unadjcredit,
+                            (case
+                                when te."DRCRCode" = 'DR'
+                                    and t."transactionType" = 'ADJUSTING' then sum(te.amount)
+                                    else 0
+                                end) as adjdebit,
+                            (case
+                                when te."DRCRCode" = 'CR'
+                                    and t."transactionType" = 'ADJUSTING' then sum(te.amount)
+                                    else 0
+                                end) as adjcredit,
+                            0 as prevadjdebit,
+                            0 as prevadjcredit,
+                            ac.id as accountid
+                        from
+                            types ty
+                        inner join classes cl on
+                            cl."typeId" = ty.id
+                        inner join groups gp on
+                            gp."classId" = cl.id
+                            and cl."companyId" = gp."companyId"
+                        inner join accounts ac on
+                            ac."groupId" = gp.id
+                            and gp."companyId" = ac."companyId"
+                        inner join "transactionEntry" te on
+                            te."accountId" = ac.id
+                            and te."companyId" = ac."companyId"
+                        inner join transaction t on
+                            t.id = te."transactionId"
+                            and t."companyId" = te."companyId"
+                        where
+                            t."companyId" = ${companyId}
+                            and ty."finDocName" = 'BALANCE SHEET'
+                            and t."transactionType" = 'ADJUSTING'
+                            and
+                cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${startDate}' as date)
+                            and
+                cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
+                        group by
+                            ty."sortOrder",
+                            ty.code,
+                            ty.name,
+                            cl.code,
+                            cl.name,
+                            gp.code,
+                            gp.name,
+                            ac.code,
+                            ac.number,
+                            ac.name,
+                            ac."DRCRCode",
+                            te."DRCRCode",
+                            t."transactionType",
+                            ty."finDocName",
+                            ac.id
+                    union all
+                        select
+                            ty."sortOrder",
+                            ty.code as typecode,
+                            ty.name as typename,
+                            cl.code as classcode,
+                            cl.name as classname,
+                            gp.code as groupcode,
+                            gp.name as groupname,
+                            ac.code as accountcode,
+                            ac.number as accountnumber,
+                            ac.name as accountname,
+                            ac."DRCRCode",
+                            ty."finDocName",
+                            0 as unadjdebit,
+                            0 as unadjcredit,
+                            0 as unadjdebit,
+                            0 as unadjcredit,
+                            (case
+                                when te."DRCRCode" = 'DR'
+                                    and t."transactionType" = 'ADJUSTING' then sum(te.amount)
+                                    else 0
+                                end) as prevadjdebit,
+                            (case
+                                when te."DRCRCode" = 'CR'
+                                    and t."transactionType" = 'ADJUSTING' then sum(te.amount)
+                                    else 0
+                                end) as prevadjcredit,
+                            ac.id as accountid
+                        from
+                            types ty
+                        inner join classes cl on
+                            cl."typeId" = ty.id
+                        inner join groups gp on
+                            gp."classId" = cl.id
+                            and cl."companyId" = gp."companyId"
+                        inner join accounts ac on
+                            ac."groupId" = gp.id
+                            and gp."companyId" = ac."companyId"
+                        inner join "transactionEntry" te on
+                            te."accountId" = ac.id
+                            and te."companyId" = ac."companyId"
+                        inner join transaction t on
+                            t.id = te."transactionId"
+                            and t."companyId" = te."companyId"
+                        where
+                            t."companyId" = ${companyId}
+                            and ty."finDocName" = 'BALANCE SHEET'
+                            and t."transactionType" = 'ADJUSTING'
+                            and cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${lastDate}' as date)
+                        group by
+                            ty."sortOrder",
+                            ty.code,
+                            ty.name,
+                            cl.code,
+                            cl.name,
+                            gp.code,
+                            gp.name,
+                            ac.code,
+                            ac.number,
+                            ac.name,
+                            ac."DRCRCode",
+                            te."DRCRCode",
+                            t."transactionType",
+                            ty."finDocName",
+                            ac.id
+                ) as bs
                     group by
-                        ty."sortOrder",
-                        ty.code,
-                        ty.name,
-                        cl.code,
-                        cl.name,
-                        gp.code,
-                        gp.name,
-                        ac.code,
-                        ac.number,
-                        ac.name,
-                        ac."DRCRCode",
-                        te."DRCRCode",
-                        t."transactionType",
-                        ty."finDocName",
-                        ac.id
-        ) as bs
-            group by
-                bs."sortOrder",
-                bs.typecode,
-                bs.typename,
-                bs.classcode,
-                bs.classname,
-                bs.groupcode,
-                bs.groupname,
-                bs.accountcode,
-                bs.accountnumber,
-                bs.accountname,
-                bs."finDocName",
-                bs.accountid
-            order by
-                "sortOrder",
-                typecode,
-                typename,
-                classcode,
-                classname,
-                groupcode,
-                groupname,
-                accountname
-        ) as bs1
-        union all
-        select
-            code,
-            number,
-            name,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            --0,0,
-            (case
-                when public.get_currentearnings(${companyId},
-                '${startDate}',
-                '${endDate}')<0 then public.get_currentearnings(${companyId},
-                '${startDate}',
-                '${endDate}')*-1
-                else 0
-            end) as closingdebit,
-            (case
-                when public.get_currentearnings(${companyId},
-                '${startDate}',
-                '${endDate}')>0 then public.get_currentearnings(${companyId},
-                '${startDate}',
-                '${endDate}')
-                else 0
-            end) as closingcredit,
-            (case
-                when public.get_currentearnings(${companyId},
-                '${startDate}',
-                '${endDate}')<0 then public.get_currentearnings(${companyId},
-                '${startDate}',
-                '${endDate}')*-1
-                else 0
-            end) as posttbdebit,
-            (case
-                when public.get_currentearnings(${companyId},
-                '${startDate}',
-                '${endDate}')>0 then public.get_currentearnings(${companyId},
-                '${startDate}',
-                '${endDate}')
-                else 0
-            end) as posttbcredit,
-            (case
-                when public.get_currentearnings(${companyId},
-                '${startDate}',
-                '${endDate}')<0 then public.get_currentearnings(${companyId},
-                '${startDate}',
-                '${endDate}')*-1
-                else 0
-            end) as bsdebit,
-            (case
-                when public.get_currentearnings(${companyId},
-                '${startDate}',
-                '${endDate}')>0 then public.get_currentearnings(${companyId},
-                '${startDate}',
-                '${endDate}')
-                else 0
-            end) as bscredit,
-            id
-        from
-            accounts
-        where
-            "companyId" = ${companyId}
-            and name = 'Net Current Earnings'
-        union all
-        select
-            code,
-            number,
-            name,
-            (case
-                when public.get_retainedearnings(${companyId},
-                '${lastDate}')<0 then public.get_retainedearnings(${companyId},
-                '${lastDate}')*-1
-                else 0
-            end),
-            (case
-                when public.get_retainedearnings(${companyId},
-                '${lastDate}')>0 then public.get_retainedearnings(${companyId},
-                '${lastDate}')
-                else 0
-            end),
-            0,
-            0,
-            (case
-                when public.get_retainedearnings(${companyId},
-                '${lastDate}')<0 then public.get_retainedearnings(${companyId},
-                '${lastDate}')*-1
-                else 0
-            end),
-            (case
-                when public.get_retainedearnings(${companyId},
-                '${lastDate}')>0 then public.get_retainedearnings(${companyId},
-                '${lastDate}')
-                else 0
-            end),
-            0,
-            0,
-0,0,
-            --(case when public.get_retainedearnings(${companyId}, '${lastDate}')<0 then public.get_retainedearnings(${companyId}, '${lastDate}')*-1 else 0 end) as closingdebit,
-            --(case when public.get_retainedearnings(${companyId}, '${lastDate}')>0 then public.get_retainedearnings(${companyId}, '${lastDate}') else 0 end) as closingcredit,
-            (case
-                when public.get_retainedearnings(${companyId},
-                '${lastDate}')<0 then public.get_retainedearnings(${companyId},
-                '${lastDate}')*-1
-                else 0
-            end) as posttbdebit,
-            (case
-                when public.get_retainedearnings(${companyId},
-                '${lastDate}')>0 then public.get_retainedearnings(${companyId},
-                '${lastDate}')
-                else 0
-            end) as posttbcredit,
-            (case
-                when public.get_retainedearnings(${companyId},
-                '${lastDate}')<0 then public.get_retainedearnings(${companyId},
-                '${lastDate}')*-1
-                else 0
-            end) as bsdebit,
-            (case
-                when public.get_retainedearnings(${companyId},
-                '${lastDate}')>0 then public.get_retainedearnings(${companyId},
-                '${lastDate}')
-                else 0
-            end) as bscredit,
-            id
-        from
-            accounts
-        where
-            "companyId" = ${companyId}
-            and name = 'Retained Earnings'`);
+                        bs."sortOrder",
+                        bs.typecode,
+                        bs.typename,
+                        bs.classcode,
+                        bs.classname,
+                        bs.groupcode,
+                        bs.groupname,
+                        bs.accountcode,
+                        bs.accountnumber,
+                        bs.accountname,
+                        bs."finDocName",
+                        bs.accountid
+                union all
+                    select
+                        bs."sortOrder",
+                        bs."finDocName",
+                        bs.typecode,
+                        bs.typename,
+                        bs.classcode,
+                        bs.classname,
+                        bs.groupcode,
+                        bs.groupname,
+                        bs.accountcode,
+                        bs.accountnumber,
+                        bs.accountname,
+                        (case
+                            when
+                sum((case when bs."DRCRCode" = 'CR' then bs.unadjcredit-bs.unadjdebit else 0 end))<0
+                then abs(sum((case when bs."DRCRCode" = 'CR' then bs.unadjcredit-bs.unadjdebit else 0 end)))
+                            else
+                (
+                case
+                                when sum((case when bs."DRCRCode" = 'DR' then bs.unadjdebit-bs.unadjcredit else 0 end))<0
+                then 0
+                                else sum((case when bs."DRCRCode" = 'DR' then bs.unadjdebit-bs.unadjcredit else 0 end))
+                            end
+                )
+                        end) as unadjdebit,
+                        (case
+                            when
+                sum((case when bs."DRCRCode" = 'DR' then bs.unadjdebit-bs.unadjcredit else 0 end))<0
+                then abs(sum((case when bs."DRCRCode" = 'DR' then bs.unadjdebit-bs.unadjcredit else 0 end)))
+                            else
+                (
+                case
+                                when sum((case when bs."DRCRCode" = 'CR' then bs.unadjcredit-bs.unadjdebit else 0 end))<0
+                then 0
+                                else sum((case when bs."DRCRCode" = 'CR' then bs.unadjcredit-bs.unadjdebit else 0 end))
+                            end
+                )
+                        end) as unadjcredit,
+                        (case
+                            when
+                sum((case when bs."DRCRCode" = 'CR' then bs.adjcredit-bs.adjdebit else 0 end))<0
+                then abs(sum((case when bs."DRCRCode" = 'CR' then bs.adjcredit-bs.adjdebit else 0 end)))
+                            else
+                (
+                case
+                                when sum((case when bs."DRCRCode" = 'DR' then bs.adjdebit-bs.adjcredit else 0 end))<0
+                then 0
+                                else sum((case when bs."DRCRCode" = 'DR' then bs.adjdebit-bs.adjcredit else 0 end))
+                            end
+                )
+                        end) as adjdebit,
+                        (case
+                            when
+                sum((case when bs."DRCRCode" = 'DR' then bs.adjdebit-bs.adjcredit else 0 end))<0
+                then abs(sum((case when bs."DRCRCode" = 'DR' then bs.adjdebit-bs.adjcredit else 0 end)))
+                            else
+                (
+                case
+                                when sum((case when bs."DRCRCode" = 'CR' then bs.adjcredit-bs.adjdebit else 0 end))<0
+                then 0
+                                else sum((case when bs."DRCRCode" = 'CR' then bs.adjcredit-bs.adjdebit else 0 end))
+                            end
+                )
+                        end) as adjcredit,
+                        bs.accountid
+                    from
+                        (
+                        select
+                            ty."sortOrder",
+                            ty.code as typecode,
+                            ty.name as typename,
+                            cl.code as classcode,
+                            cl.name as classname,
+                            gp.code as groupcode,
+                            gp.name as groupname,
+                            ac.code as accountcode,
+                            ac.number as accountnumber,
+                            ac.name as accountname,
+                            ac."DRCRCode",
+                            ty."finDocName",
+                            (case
+                                when te."DRCRCode" = 'DR'
+                                    and t."transactionType" <> 'ADJUSTING' then sum(te.amount)
+                                    else 0
+                                end) as unadjdebit,
+                            (case
+                                when te."DRCRCode" = 'CR'
+                                    and t."transactionType" <> 'ADJUSTING' then sum(te.amount)
+                                    else 0
+                                end) as unadjcredit,
+                            (case
+                                when te."DRCRCode" = 'DR'
+                                    and t."transactionType" = 'ADJUSTING' then sum(te.amount)
+                                    else 0
+                                end) as adjdebit,
+                            (case
+                                when te."DRCRCode" = 'CR'
+                                    and t."transactionType" = 'ADJUSTING' then sum(te.amount)
+                                    else 0
+                                end) as adjcredit,
+                            0 as prevadjdebit,
+                            0 as prevadjcredit,
+                            ac.id as accountid
+                        from
+                            types ty
+                        inner join classes cl on
+                            cl."typeId" = ty.id
+                        inner join groups gp on
+                            gp."classId" = cl.id
+                            and cl."companyId" = gp."companyId"
+                        inner join accounts ac on
+                            ac."groupId" = gp.id
+                            and gp."companyId" = ac."companyId"
+                        inner join "transactionEntry" te on
+                            te."accountId" = ac.id
+                            and te."companyId" = ac."companyId"
+                        inner join transaction t on
+                            t.id = te."transactionId"
+                            and t."companyId" = te."companyId"
+                        where
+                            t."companyId" = ${companyId}
+                            and ty."finDocName" = 'INCOME STATEMENT'
+                            and
+                cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) >= cast('${startDate}' as date)
+                                and
+                cast(to_char(t."transactionDate", 'mm/dd/yyyy') as date) <= cast('${endDate}' as date)
+                            group by
+                                ty."sortOrder",
+                                ty.code,
+                                ty.name,
+                                cl.code,
+                                cl.name,
+                                gp.code,
+                                gp.name,
+                                ac.code,
+                                ac.number,
+                                ac.name,
+                                ac."DRCRCode",
+                                te."DRCRCode",
+                                t."transactionType",
+                                ty."finDocName",
+                                ac.id
+                ) as bs
+                    group by
+                        bs."sortOrder",
+                        bs.typecode,
+                        bs.typename,
+                        bs.classcode,
+                        bs.classname,
+                        bs.groupcode,
+                        bs.groupname,
+                        bs.accountcode,
+                        bs.accountnumber,
+                        bs.accountname,
+                        bs."finDocName",
+                        bs.accountid
+                ) as bs1
+                union all
+                select
+                    code,
+                    number,
+                    name,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    (case
+                        when public.get_currentearnings(${companyId},
+                        '${startDate}',
+                        '${endDate}')<0 then public.get_currentearnings(${companyId},
+                        '${startDate}',
+                        '${endDate}')*-1
+                        else 0
+                    end) as closingdebit,
+                    (case
+                        when public.get_currentearnings(${companyId},
+                        '${startDate}',
+                        '${endDate}')>0 then public.get_currentearnings(${companyId},
+                        '${startDate}',
+                        '${endDate}')
+                        else 0
+                    end) as closingcredit,
+                    (case
+                        when public.get_currentearnings(${companyId},
+                        '${startDate}',
+                        '${endDate}')<0 then public.get_currentearnings(${companyId},
+                        '${startDate}',
+                        '${endDate}')*-1
+                        else 0
+                    end) as posttbdebit,
+                    (case
+                        when public.get_currentearnings(${companyId},
+                        '${startDate}',
+                        '${endDate}')>0 then public.get_currentearnings(${companyId},
+                        '${startDate}',
+                        '${endDate}')
+                        else 0
+                    end) as posttbcredit,
+                    (case
+                        when public.get_currentearnings(${companyId},
+                        '${startDate}',
+                        '${endDate}')<0 then public.get_currentearnings(${companyId},
+                        '${startDate}',
+                        '${endDate}')*-1
+                        else 0
+                    end) as bsdebit,
+                    (case
+                        when public.get_currentearnings(${companyId},
+                        '${startDate}',
+                        '${endDate}')>0 then public.get_currentearnings(${companyId},
+                        '${startDate}',
+                        '${endDate}')
+                        else 0
+                    end) as bscredit,
+                    id
+                from
+                    accounts
+                where
+                    "companyId" = ${companyId}
+                    and name = 'Net Current Earnings'
+                union all
+                select
+                    code,
+                    number,
+                    name,
+                    (case
+                        when public.get_retainedearnings(${companyId},
+                        '${lastDate}')<0 then public.get_retainedearnings(${companyId},
+                        '${lastDate}')*-1
+                        else 0
+                    end),
+                    (case
+                        when public.get_retainedearnings(${companyId},
+                        '${lastDate}')>0 then public.get_retainedearnings(${companyId},
+                        '${lastDate}')
+                        else 0
+                    end),
+                    0,
+                    0,
+                    (case
+                        when public.get_retainedearnings(${companyId},
+                        '${lastDate}')<0 then public.get_retainedearnings(${companyId},
+                        '${lastDate}')*-1
+                        else 0
+                    end),
+                    (case
+                        when public.get_retainedearnings(${companyId},
+                        '${lastDate}')>0 then public.get_retainedearnings(${companyId},
+                        '${lastDate}')
+                        else 0
+                    end),
+                    0,
+                    0,
+                    0,0,
+                    (case
+                        when public.get_retainedearnings(${companyId},
+                        '${lastDate}')<0 then public.get_retainedearnings(${companyId},
+                        '${lastDate}')*-1
+                        else 0
+                    end) as posttbdebit,
+                    (case
+                        when public.get_retainedearnings(${companyId},
+                        '${lastDate}')>0 then public.get_retainedearnings(${companyId},
+                        '${lastDate}')
+                        else 0
+                    end) as posttbcredit,
+                    (case
+                        when public.get_retainedearnings(${companyId},
+                        '${lastDate}')<0 then public.get_retainedearnings(${companyId},
+                        '${lastDate}')*-1
+                        else 0
+                    end) as bsdebit,
+                    (case
+                        when public.get_retainedearnings(${companyId},
+                        '${lastDate}')>0 then public.get_retainedearnings(${companyId},
+                        '${lastDate}')
+                        else 0
+                    end) as bscredit,
+                    id
+                from
+                    accounts
+                where
+                    "companyId" = ${companyId}
+                    and name = 'Retained Earnings'
+        ) AS merged_data
+        GROUP BY 
+            accountcode, 
+            accountnumber, 
+            accountid
+        ORDER BY 
+            accountcode
+      `);
       return result[0];
     } catch (e) {
       console.log(e.message);
